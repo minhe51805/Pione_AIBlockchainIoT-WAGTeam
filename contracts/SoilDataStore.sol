@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 contract SoilDataStore {
     struct SoilData {
         uint256 timestamp;
         uint256 moisture;
-        uint256 pH;
         uint256 temperature;
         uint256 humidity;
         address reporter;
@@ -17,7 +15,6 @@ contract SoilDataStore {
         uint256 indexed id,
         uint256 timestamp,
         uint256 moisture,
-        uint256 pH,
         uint256 temperature,
         uint256 humidity,
         address reporter
@@ -27,7 +24,6 @@ contract SoilDataStore {
     function storeData(
         uint256 _timestamp,
         uint256 _moisture,
-        uint256 _pH,
         uint256 _temperature,
         uint256 _humidity
     ) public {
@@ -35,7 +31,6 @@ contract SoilDataStore {
             SoilData({
                 timestamp: _timestamp,
                 moisture: _moisture,
-                pH: _pH,
                 temperature: _temperature,
                 humidity: _humidity,
                 reporter: msg.sender
@@ -46,7 +41,6 @@ contract SoilDataStore {
             records.length - 1,
             _timestamp,
             _moisture,
-            _pH,
             _temperature,
             _humidity,
             msg.sender

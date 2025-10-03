@@ -2,7 +2,8 @@ import express from "express";
 import { ethers } from "ethers";
 import fs from "fs";
 import dotenv from "dotenv";
-
+import { time } from "console";
+import { isNumberObject } from "util/types";
 dotenv.config();
 
 const app = express();
@@ -23,10 +24,16 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 app.post("/pushData", async (req, res) => {
   try {
-    const { timestamp, moisture, temperature, humidity } = req.body;
+    let { timestamp, moisture, temperature, humidity } = req.body;
+
+    if (!isNumberObject(timestamp) && typeof timestamp !== "number") {
+      timestamp = Math.floor(new Date(timestamp).getTime() / 1000);
+    } else if (timestamp > 1e12) {
+      timestamp = Math.floor(timestamp / 1000);
+    }
 
     const tx = await contract.storeData(
-      timestamp,
+      Number(timestamp),
       Math.round(moisture * 10),
       Math.round(temperature * 10),
       Math.round(humidity * 10)
@@ -34,12 +41,13 @@ app.post("/pushData", async (req, res) => {
 
     await tx.wait();
 
-    res.json({ status: "ok", txHash: tx.hash });
+    res.json({ status: "ok", txHash: tx.hash, savedTimestamp: timestamp });
   } catch (err) {
-    console.error(err);
+    console.error("pushData error:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.get("/getData", async (req, res) => {
   try {
