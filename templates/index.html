@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP8266 Data Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
+        .container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 32px; }
+        h1 { text-align: center; color: #2d7ef7; }
+        .data { font-size: 1.2em; margin: 24px 0; }
+        .label { color: #888; }
+        .value { font-weight: bold; color: #222; }
+        .status { text-align: center; margin-top: 16px; color: #2d7ef7; }
+        .status.success { color: #28a745; }
+        .status.error { color: #dc3545; }
+        .status.waiting { color: #ffc107; }
+        button { background: #2d7ef7; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #1b5dbf; }
+        .last-update { font-size: 0.9em; color: #666; margin-top: 10px; }
+        .data-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+        .data-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESP8266 Data Dashboard</h1>
+        <div class="data">
+            <div class="data-item"><span class="label">Temperature:</span> <span class="value" id="temperature">--</span> °C</div>
+            <div class="data-item"><span class="label">Humidity:</span> <span class="value" id="humidity">--</span> %</div>
+            <div class="data-item"><span class="label">Soil Moisture:</span> <span class="value" id="soil">--</span> %</div>
+            <div class="data-item" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                <span class="label">ESP Time:</span> <span class="value" id="espTime" style="color: #2d7ef7;">--</span>
+            </div>
+        </div>
+        <div class="status" id="status">Waiting for data...</div>
+        <div class="last-update" id="lastUpdate"></div>
+        <div style="text-align: center;">
+            <button onclick="refreshData()">Refresh Now</button>
+            <button onclick="toggleAutoRefresh()" id="autoToggle">Auto: ON</button>
+        </div>
+    </div>
+    <script>
+        let autoRefresh = true;
+        let refreshInterval;
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function updateLastUpdate() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const dateStr = now.toLocaleDateString();
+            document.getElementById('lastUpdate').textContent = `Last updated: ${timeStr} - ${dateStr}`;
+        }
+        
+        function refreshData() {
+            console.log('Fetching data from /api/latest...');
+            updateStatus('Fetching data...', 'waiting');
+            
+            fetch('/api/latest')
+                .then(res => {
+                    console.log('Response status:', res.status);
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Data received:', data);
+                    
+                    // Cập nhật dữ liệu
+                    document.getElementById('temperature').textContent = data.temperature ?? '--';
+                    document.getElementById('humidity').textContent = data.humidity ?? '--';
+                    document.getElementById('soil').textContent = data.soil ?? '--';
+                    
+                    // Hiển thị timestamp từ ESP32
+                    if (data.timestamp) {
+                        document.getElementById('espTime').textContent = data.timestamp;
+                    } else {
+                        document.getElementById('espTime').textContent = '--';
+                    }
+                    
+                    // Cập nhật trạng thái
+                    if (data.temperature !== null) {
+                        updateStatus('✅ Data received successfully!', 'success');
+                    } else {
+                        updateStatus('⏳ Waiting for ESP8266 data...', 'waiting');
+                    }
+                    
+                    updateLastUpdate();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    updateStatus('❌ Error: ' + error.message, 'error');
+                });
+        }
+        
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const toggleBtn = document.getElementById('autoToggle');
+            
+            if (autoRefresh) {
+                toggleBtn.textContent = 'Auto: ON';
+                toggleBtn.style.background = '#28a745';
+                startAutoRefresh();
+                updateStatus('🔄 Auto-refresh enabled', 'success');
+            } else {
+                toggleBtn.textContent = 'Auto: OFF';
+                toggleBtn.style.background = '#dc3545';
+                clearInterval(refreshInterval);
+                updateStatus('⏸️ Auto-refresh disabled', 'waiting');
+            }
+        }
+        
+        function startAutoRefresh() {
+            clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if (autoRefresh) {
+                    refreshData();
+                }
+            }, 2000); // Refresh mỗi 2 giây để nhanh hơn
+        }
+        
+        // Khởi động
+        refreshData();
+        startAutoRefresh();
+    </script>
+</body>
+</html>
