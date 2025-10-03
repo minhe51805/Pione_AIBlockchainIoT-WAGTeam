@@ -23,12 +23,11 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 app.post("/pushData", async (req, res) => {
   try {
-    const { timestamp, moisture, pH, temperature, humidity } = req.body;
+    const { timestamp, moisture, temperature, humidity } = req.body;
 
     const tx = await contract.storeData(
       timestamp,
       Math.round(moisture * 10),
-      Math.round(pH * 10),
       Math.round(temperature * 10),
       Math.round(humidity * 10)
     );
@@ -52,7 +51,6 @@ app.get("/getData", async (req, res) => {
         id: i,
         timestamp: Number(r.timestamp),
         moisture: Number(r.moisture) / 10,
-        pH: Number(r.pH) / 10,
         temperature: Number(r.temperature) / 10,
         humidity: Number(r.humidity) / 10,
         reporter: r.reporter
@@ -82,7 +80,6 @@ app.get("/getDataRange", async (req, res) => {
       id: i,
       timestamp: Number(r.timestamp),
       moisture: Number(r.moisture) / 10,
-      pH: Number(r.pH) / 10,
       temperature: Number(r.temperature) / 10,
       humidity: Number(r.humidity) / 10,
       reporter: r.reporter
