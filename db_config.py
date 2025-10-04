@@ -1,16 +1,14 @@
 """
-Cấu hình kết nối MySQL Database
-Sửa thông tin kết nối phù hợp với MySQL server của bạn
+Cấu hình kết nối PostgreSQL Database
+Sửa thông tin kết nối phù hợp với PostgreSQL server của bạn
 """
 
 DB_CONFIG = {
-    'host': 'localhost',      # Địa chỉ MySQL server
-    'port': 3306,             # Port MySQL (mặc định 3306)
-    'user': 'root',           # Username MySQL
-    'password': 'root',           # Password MySQL (để trống nếu không có)
-    'database': 'iot_gateway', # Tên database
-    'charset': 'utf8mb4',
-    'autocommit': True
+    'host': 'localhost',      # Địa chỉ PostgreSQL server
+    'port': 5437,             # Port PostgreSQL (mặc định 5432)
+    'user': 'HiepData',       # Username PostgreSQL
+    'password': '123456',     # Password PostgreSQL
+    'database': 'db_iot_sensor', # Tên database
 }
 
 # Connection pool settings

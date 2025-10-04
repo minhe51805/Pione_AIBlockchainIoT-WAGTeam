@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import traceback
 from datetime import datetime
-import mysql.connector
-from mysql.connector import Error, pooling
+import psycopg2
+from psycopg2 import pool, Error
 from db_config import DB_CONFIG, POOL_CONFIG
 
 app = Flask(__name__)
@@ -11,11 +11,11 @@ CORS(app)
 
 # Tạo connection pool để tối ưu performance
 try:
-    connection_pool = pooling.MySQLConnectionPool(
-        **DB_CONFIG,
-        **POOL_CONFIG
+    connection_pool = psycopg2.pool.SimpleConnectionPool(
+        1, POOL_CONFIG['pool_size'],
+        **DB_CONFIG
     )
-    print("[OK] MySQL Connection Pool created successfully")
+    print("[OK] PostgreSQL Connection Pool created successfully")
 except Error as e:
     print(f"[ERROR] Error creating connection pool: {e}")
     connection_pool = None
@@ -34,16 +34,16 @@ def get_db_connection():
     """Lấy connection từ pool"""
     try:
         if connection_pool:
-            return connection_pool.get_connection()
+            return connection_pool.getconn()
         else:
             # Fallback: tạo connection trực tiếp nếu pool fail
-            return mysql.connector.connect(**DB_CONFIG)
+            return psycopg2.connect(**DB_CONFIG)
     except Error as e:
         print(f"[ERROR] Error getting database connection: {e}")
         return None
 
 def insert_sensor_data(temperature, humidity, soil, timestamp, status):
-    """Lưu dữ liệu sensor vào MySQL"""
+    """Lưu dữ liệu sensor vào PostgreSQL"""
     connection = None
     cursor = None
     try:
@@ -53,19 +53,20 @@ def insert_sensor_data(temperature, humidity, soil, timestamp, status):
             
         cursor = connection.cursor()
         
+        # Sử dụng bảng sensor_readings theo cấu trúc PostgreSQL
         query = """
-        INSERT INTO sensor_data (temperature, humidity, soil, timestamp, status)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO sensor_readings (temperature_c, humidity_pct, moisture_pct, measured_at_vn)
+        VALUES (%s, %s, %s, %s)
         """
         
-        cursor.execute(query, (temperature, humidity, soil, timestamp, status))
+        cursor.execute(query, (temperature, humidity, soil, timestamp))
         connection.commit()
         
-        print(f"[OK] Data saved to MySQL - ID: {cursor.lastrowid}")
+        print(f"[OK] Data saved to PostgreSQL")
         return True
         
     except Error as e:
-        print(f"[ERROR] MySQL Error: {e}")
+        print(f"[ERROR] PostgreSQL Error: {e}")
         if connection:
             connection.rollback()
         return False
@@ -74,7 +75,10 @@ def insert_sensor_data(temperature, humidity, soil, timestamp, status):
         if cursor:
             cursor.close()
         if connection:
-            connection.close()
+            if connection_pool:
+                connection_pool.putconn(connection)
+            else:
+                connection.close()
 
 def get_latest_from_db():
     """Lấy dữ liệu mới nhất từ database"""
@@ -85,11 +89,11 @@ def get_latest_from_db():
         if not connection:
             return None
             
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         
         query = """
-        SELECT temperature, humidity, soil, timestamp, status, created_at
-        FROM sensor_data
+        SELECT temperature_c, humidity_pct, moisture_pct, measured_at_vn, created_at_vn, onchain_status
+        FROM sensor_readings
         ORDER BY id DESC
         LIMIT 1
         """
@@ -97,17 +101,29 @@ def get_latest_from_db():
         cursor.execute(query)
         result = cursor.fetchone()
         
-        return result
+        if result:
+            return {
+                'temperature': result[0],
+                'humidity': result[1], 
+                'soil': result[2],
+                'timestamp': result[3],
+                'created_at': result[4],
+                'status': result[5] if result[5] else 'pending'
+            }
+        return None
         
     except Error as e:
-        print(f"[ERROR] MySQL Error: {e}")
+        print(f"[ERROR] PostgreSQL Error: {e}")
         return None
         
     finally:
         if cursor:
             cursor.close()
         if connection:
-            connection.close()
+            if connection_pool:
+                connection_pool.putconn(connection)
+            else:
+                connection.close()
 
 def get_history_data(limit=100):
     """Lấy lịch sử dữ liệu"""
@@ -118,11 +134,11 @@ def get_history_data(limit=100):
         if not connection:
             return []
             
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         
         query = """
-        SELECT id, temperature, humidity, soil, timestamp, status, created_at
-        FROM sensor_data
+        SELECT id, temperature_c, humidity_pct, moisture_pct, measured_at_vn, onchain_status, created_at_vn
+        FROM sensor_readings
         ORDER BY id DESC
         LIMIT %s
         """
@@ -130,22 +146,33 @@ def get_history_data(limit=100):
         cursor.execute(query, (limit,))
         results = cursor.fetchall()
         
-        # Convert datetime to string
+        # Convert results to list of dictionaries
+        history = []
         for row in results:
-            if row.get('created_at'):
-                row['created_at'] = row['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            history.append({
+                'id': row[0],
+                'temperature': row[1],
+                'humidity': row[2],
+                'soil': row[3],
+                'timestamp': row[4].strftime('%Y-%m-%d %H:%M:%S') if row[4] else None,
+                'status': row[5] if row[5] else 'pending',
+                'created_at': row[6].strftime('%Y-%m-%d %H:%M:%S') if row[6] else None
+            })
         
-        return results
+        return history
         
     except Error as e:
-        print(f"[ERROR] MySQL Error: {e}")
+        print(f"[ERROR] PostgreSQL Error: {e}")
         return []
         
     finally:
         if cursor:
             cursor.close()
         if connection:
-            connection.close()
+            if connection_pool:
+                connection_pool.putconn(connection)
+            else:
+                connection.close()
 
 # Route nhận dữ liệu từ ESP32/ESP8266
 @app.route("/api/data", methods=["POST"])
