@@ -2,12 +2,17 @@
 pragma solidity ^0.8.20;
 
 contract SoilDataStore {
+    // Lưu dữ liệu theo yêu cầu: measured_at_vn, temperature_c, humidity_pct, moisture_pct
+    // Quy ước:
+    // - measuredAtVN: Unix epoch seconds (thời điểm VN – tương đương thời điểm tuyệt đối)
+    // - temperatureC: nhiệt độ C nhân 10 (ví dụ 27.1C => 271) để lưu số nguyên
+    // - humidityPct: % độ ẩm không khí (0..100)
+    // - moisturePct: % độ ẩm đất (0..100)
     struct SoilData {
-        uint256 timestamp;
-        uint256 moisture;
-        uint256 pH;
-        uint256 temperature;
-        uint256 humidity;
+        uint256 measuredAtVN;
+        uint256 temperatureC;
+        uint256 humidityPct;
+        uint256 moisturePct;
         address reporter;
     }
 
@@ -15,40 +20,36 @@ contract SoilDataStore {
 
     event DataStored(
         uint256 indexed id,
-        uint256 timestamp,
-        uint256 moisture,
-        uint256 pH,
-        uint256 temperature,
-        uint256 humidity,
+        uint256 measuredAtVN,
+        uint256 temperatureC,
+        uint256 humidityPct,
+        uint256 moisturePct,
         address reporter
     );
 
-    // Store JSON data from sensor
+    // Ghi dữ liệu từ DB (đã chuẩn hóa)
     function storeData(
-        uint256 _timestamp,
-        uint256 _moisture,
-        uint256 _pH,
-        uint256 _temperature,
-        uint256 _humidity
+        uint256 _measuredAtVN,
+        uint256 _temperatureC,
+        uint256 _humidityPct,
+        uint256 _moisturePct
     ) public {
         records.push(
             SoilData({
-                timestamp: _timestamp,
-                moisture: _moisture,
-                pH: _pH,
-                temperature: _temperature,
-                humidity: _humidity,
+                measuredAtVN: _measuredAtVN,
+                temperatureC: _temperatureC,
+                humidityPct: _humidityPct,
+                moisturePct: _moisturePct,
                 reporter: msg.sender
             })
         );
 
         emit DataStored(
             records.length - 1,
-            _timestamp,
-            _moisture,
-            _pH,
-            _temperature,
-            _humidity,
+            _measuredAtVN,
+            _temperatureC,
+            _humidityPct,
+            _moisturePct,
             msg.sender
         );
     }
@@ -64,7 +65,7 @@ contract SoilDataStore {
         return records[id];
     }
 
-    // Query by time range
+    // Query by time range (lọc theo measuredAtVN)
     function getRecordsByTimeRange(
         uint256 startTime,
         uint256 endTime
@@ -72,8 +73,8 @@ contract SoilDataStore {
         uint256 count = 0;
         for (uint256 i = 0; i < records.length; i++) {
             if (
-                records[i].timestamp >= startTime &&
-                records[i].timestamp <= endTime
+                records[i].measuredAtVN >= startTime &&
+                records[i].measuredAtVN <= endTime
             ) {
                 count++;
             }
@@ -83,8 +84,8 @@ contract SoilDataStore {
         uint256 idx = 0;
         for (uint256 i = 0; i < records.length; i++) {
             if (
-                records[i].timestamp >= startTime &&
-                records[i].timestamp <= endTime
+                records[i].measuredAtVN >= startTime &&
+                records[i].measuredAtVN <= endTime
             ) {
                 result[idx] = records[i];
                 idx++;

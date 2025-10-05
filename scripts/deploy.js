@@ -1,3 +1,7 @@
+import hre from "hardhat";
+
+const { ethers } = hre;
+
 async function main() {
   const SoilDataStore = await ethers.getContractFactory("SoilDataStore");
   const store = await SoilDataStore.deploy();
