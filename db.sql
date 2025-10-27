@@ -13,8 +13,6 @@ CREATE TABLE sensor_readings (
                               CHECK (onchain_status IN ('pending','sent','confirmed','failed')),
   onchain_tx_hash   TEXT,     -- tx hash để đối chiếu explorer
 
-  -- Thời điểm server ghi vào DB, theo giờ Việt Nam
-  created_at_vn     TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Ho_Chi_Minh'),
 
   -- Không cho trùng dữ liệu theo mốc thời gian
   UNIQUE (measured_at_vn)

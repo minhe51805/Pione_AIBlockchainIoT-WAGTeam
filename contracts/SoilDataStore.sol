@@ -2,17 +2,27 @@
 pragma solidity ^0.8.20;
 
 contract SoilDataStore {
-    // Lưu dữ liệu theo yêu cầu: measured_at_vn, temperature_c, humidity_pct, moisture_pct
+    // Lưu dữ liệu cảm biến đất mới (8 trường)
     // Quy ước:
-    // - measuredAtVN: Unix epoch seconds (thời điểm VN – tương đương thời điểm tuyệt đối)
-    // - temperatureC: nhiệt độ C nhân 10 (ví dụ 27.1C => 271) để lưu số nguyên
-    // - humidityPct: % độ ẩm không khí (0..100)
-    // - moisturePct: % độ ẩm đất (0..100)
+    // - measuredAtVN: Unix epoch seconds (thời điểm VN)
+    // - temperatureC: nhiệt độ C nhân 10 (ví dụ 27.1°C => 271)
+    // - humidityPct: % độ ẩm không khí (0..100) nhân 10 (45.5% => 455)
+    // - conductivity: độ dẫn điện µS/cm (0-2000+)
+    // - phValue: pH nhân 10 (pH 6.5 => 65)
+    // - nitrogen: Nitơ mg/kg (0-1999)
+    // - phosphorus: Photpho mg/kg (0-1999)
+    // - potassium: Kali mg/kg (0-1999)
+    // - salt: Muối mg/L (0-5000+)
     struct SoilData {
         uint256 measuredAtVN;
         uint256 temperatureC;
         uint256 humidityPct;
-        uint256 moisturePct;
+        uint256 conductivity;
+        uint256 phValue;
+        uint256 nitrogen;
+        uint256 phosphorus;
+        uint256 potassium;
+        uint256 salt;
         address reporter;
     }
 
@@ -23,7 +33,12 @@ contract SoilDataStore {
         uint256 measuredAtVN,
         uint256 temperatureC,
         uint256 humidityPct,
-        uint256 moisturePct,
+        uint256 conductivity,
+        uint256 phValue,
+        uint256 nitrogen,
+        uint256 phosphorus,
+        uint256 potassium,
+        uint256 salt,
         address reporter
     );
 
@@ -32,14 +47,24 @@ contract SoilDataStore {
         uint256 _measuredAtVN,
         uint256 _temperatureC,
         uint256 _humidityPct,
-        uint256 _moisturePct
+        uint256 _conductivity,
+        uint256 _phValue,
+        uint256 _nitrogen,
+        uint256 _phosphorus,
+        uint256 _potassium,
+        uint256 _salt
     ) public {
         records.push(
             SoilData({
                 measuredAtVN: _measuredAtVN,
                 temperatureC: _temperatureC,
                 humidityPct: _humidityPct,
-                moisturePct: _moisturePct,
+                conductivity: _conductivity,
+                phValue: _phValue,
+                nitrogen: _nitrogen,
+                phosphorus: _phosphorus,
+                potassium: _potassium,
+                salt: _salt,
                 reporter: msg.sender
             })
         );
@@ -49,7 +74,12 @@ contract SoilDataStore {
             _measuredAtVN,
             _temperatureC,
             _humidityPct,
-            _moisturePct,
+            _conductivity,
+            _phValue,
+            _nitrogen,
+            _phosphorus,
+            _potassium,
+            _salt,
             msg.sender
         );
     }

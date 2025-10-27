@@ -4,6 +4,10 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timezone, timedelta
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 
 def get_db_conn():
@@ -61,9 +65,20 @@ def receive_data():
         data = request.get_json(silent=True) or {}
         temperature = data.get("temperature")
         humidity = data.get("humidity")
-        soil = data.get("soil")
-        if temperature is None or humidity is None or soil is None:
-            return jsonify({"status": "error", "message": "Missing temperature/humidity/soil"}), 400
+        conductivity = data.get("conductivity")
+        ph = data.get("ph")
+        nitrogen = data.get("nitrogen")
+        phosphorus = data.get("phosphorus")
+        potassium = data.get("potassium")
+        salt = data.get("salt")
+        
+        # Validate required fields
+        if temperature is None or humidity is None:
+            return jsonify({"status": "error", "message": "Missing temperature/humidity"}), 400
+        if conductivity is None or ph is None:
+            return jsonify({"status": "error", "message": "Missing conductivity/ph"}), 400
+        if nitrogen is None or phosphorus is None or potassium is None or salt is None:
+            return jsonify({"status": "error", "message": "Missing nitrogen/phosphorus/potassium/salt"}), 400
 
         measured_at_vn = normalize_measured_at_vn(data)
         if not measured_at_vn:
@@ -73,11 +88,25 @@ def receive_data():
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO sensor_readings (measured_at_vn, temperature_c, humidity_pct, moisture_pct)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO sensor_readings (
+                        measured_at_vn, temperature_c, humidity_pct,
+                        conductivity_us_cm, ph_value, nitrogen_mg_kg,
+                        phosphorus_mg_kg, potassium_mg_kg, salt_mg_l
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (measured_at_vn) DO NOTHING
                     """,
-                    (measured_at_vn, float(temperature), int(humidity), int(soil)),
+                    (
+                        measured_at_vn,
+                        float(temperature),
+                        float(humidity),
+                        int(conductivity),
+                        float(ph),
+                        int(nitrogen),
+                        int(phosphorus),
+                        int(potassium),
+                        int(salt)
+                    ),
                 )
                 conn.commit()
 
@@ -94,7 +123,7 @@ def receive_data():
                     headers={"Content-Type": "application/json"},
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=3) as resp:
+                with urllib.request.urlopen(req, timeout=30) as resp:
                     bridge_result = {"status": resp.status}
             except Exception as e:
                 bridge_result = {"error": str(e)}
@@ -115,7 +144,10 @@ def api_latest():
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
                     """
-                    SELECT id, temperature_c as temperature, humidity_pct as humidity, moisture_pct as soil,
+                    SELECT id, temperature_c as temperature, humidity_pct as humidity,
+                           conductivity_us_cm as conductivity, ph_value as ph,
+                           nitrogen_mg_kg as nitrogen, phosphorus_mg_kg as phosphorus,
+                           potassium_mg_kg as potassium, salt_mg_l as salt,
                            measured_at_vn, created_at_vn, onchain_status
                     FROM sensor_readings
                     ORDER BY id DESC
@@ -141,7 +173,10 @@ def api_history():
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
                     """
-                    SELECT id, temperature_c as temperature, humidity_pct as humidity, moisture_pct as soil,
+                    SELECT id, temperature_c as temperature, humidity_pct as humidity,
+                           conductivity_us_cm as conductivity, ph_value as ph,
+                           nitrogen_mg_kg as nitrogen, phosphorus_mg_kg as phosphorus,
+                           potassium_mg_kg as potassium, salt_mg_l as salt,
                            measured_at_vn as timestamp, onchain_status as status, created_at_vn as created_at
                     FROM sensor_readings
                     ORDER BY id DESC

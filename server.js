@@ -32,6 +32,7 @@ const abiFile = JSON.parse(
 const abi = abiFile.abi;
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+console.log(' CONTRACT_ADDRESS:', CONTRACT_ADDRESS);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 // ====== Helpers ======
@@ -93,7 +94,8 @@ async function bridgePending(limit = 3) {
       WHERE s.id = c.id
       RETURNING s.id,
                 EXTRACT(EPOCH FROM s.measured_at_vn AT TIME ZONE 'Asia/Ho_Chi_Minh')::bigint AS measured_at_epoch,
-                s.temperature_c, s.humidity_pct, s.moisture_pct;
+                s.temperature_c, s.humidity_pct, s.conductivity_us_cm, s.ph_value,
+                s.nitrogen_mg_kg, s.phosphorus_mg_kg, s.potassium_mg_kg, s.salt_mg_l;
     `;
     const { rows: claimed } = await client.query(claimSql, [limit, workerId]);
     await client.query('COMMIT');
@@ -104,8 +106,13 @@ async function bridgePending(limit = 3) {
         const tx = await contract.storeData(
           BigInt(r.measured_at_epoch),
           BigInt(Math.round(Number(r.temperature_c) * 10)),
-          BigInt(Number(r.humidity_pct)),
-          BigInt(Number(r.moisture_pct))
+          BigInt(Math.round(Number(r.humidity_pct) * 10)),
+          BigInt(Number(r.conductivity_us_cm)),
+          BigInt(Math.round(Number(r.ph_value) * 10)),
+          BigInt(Number(r.nitrogen_mg_kg)),
+          BigInt(Number(r.phosphorus_mg_kg)),
+          BigInt(Number(r.potassium_mg_kg)),
+          BigInt(Number(r.salt_mg_l))
         );
         const receipt = await tx.wait();
         await dbPool.query(
@@ -138,7 +145,6 @@ async function bridgePending(limit = 3) {
 
 // ====== Direct IoT push endpoint (event-driven) ======
 // Payload ví dụ từ thiết bị / aggregator:
-// { temperature: 27.1, humidity: 58, soil: 45, timestamp: "2025-10-04 17:30:01" | "Sat, 04 Oct 2025 10:50:06 GMT", created_at?: "2025-10-04 17:30:01" }
 app.post("/api/data", async (req, res) => {
   try {
     const measuredAtVN = normalizeMeasuredAtVNFromPayload(req.body);
@@ -147,18 +153,35 @@ app.post("/api/data", async (req, res) => {
     }
     const temperature_c = Number(req.body?.temperature);
     const humidity_pct = Number(req.body?.humidity);
-    const moisture_pct = Number(req.body?.soil);
-    if (!Number.isFinite(temperature_c) || !Number.isFinite(humidity_pct) || !Number.isFinite(moisture_pct)) {
+    const conductivity_us_cm = Number(req.body?.conductivity);
+    const ph_value = Number(req.body?.ph);
+    const nitrogen_mg_kg = Number(req.body?.nitrogen);
+    const phosphorus_mg_kg = Number(req.body?.phosphorus);
+    const potassium_mg_kg = Number(req.body?.potassium);
+    const salt_mg_l = Number(req.body?.salt);
+    
+    if (!Number.isFinite(temperature_c) || !Number.isFinite(humidity_pct) || 
+        !Number.isFinite(conductivity_us_cm) || !Number.isFinite(ph_value) ||
+        !Number.isFinite(nitrogen_mg_kg) || !Number.isFinite(phosphorus_mg_kg) ||
+        !Number.isFinite(potassium_mg_kg) || !Number.isFinite(salt_mg_l)) {
       return res.status(400).json({ error: "invalid numeric fields" });
     }
 
     const insertSql = `
-      INSERT INTO sensor_readings (measured_at_vn, temperature_c, humidity_pct, moisture_pct)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO sensor_readings (
+        measured_at_vn, temperature_c, humidity_pct,
+        conductivity_us_cm, ph_value, nitrogen_mg_kg,
+        phosphorus_mg_kg, potassium_mg_kg, salt_mg_l
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (measured_at_vn) DO NOTHING
       RETURNING id
     `;
-    const result = await dbPool.query(insertSql, [measuredAtVN, temperature_c, humidity_pct, moisture_pct]);
+    const result = await dbPool.query(insertSql, [
+      measuredAtVN, temperature_c, humidity_pct,
+      conductivity_us_cm, ph_value, nitrogen_mg_kg,
+      phosphorus_mg_kg, potassium_mg_kg, salt_mg_l
+    ]);
 
     // Optional: bridge immediately when enabled
     if (process.env.BRIDGE_ON_INSERT === "true" && result.rowCount > 0) {
@@ -195,8 +218,13 @@ app.get("/getData", async (req, res) => {
         id: i,
         measuredAtVN: formatEpochToVnString(Number(r.measuredAtVN)),
         temperatureC: Number(r.temperatureC) / 10,
-        humidityPct: Number(r.humidityPct),
-        moisturePct: Number(r.moisturePct),
+        humidityPct: Number(r.humidityPct) / 10,
+        conductivity: Number(r.conductivity),
+        phValue: Number(r.phValue) / 10,
+        nitrogen: Number(r.nitrogen),
+        phosphorus: Number(r.phosphorus),
+        potassium: Number(r.potassium),
+        salt: Number(r.salt),
         reporter: r.reporter
       });
     }
