@@ -41,13 +41,5 @@
     "pomegranate",
     "rice",
     "watermelon"
-  ],
-  "split_ratio": [
-    0.7,
-    0.15,
-    0.15
-  ],
-  "random_state": 42,
-  "scaling_method": "StandardScaler",
-  "stratified": true
+  ]
 }

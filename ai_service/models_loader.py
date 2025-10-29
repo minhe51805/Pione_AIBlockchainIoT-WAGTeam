@@ -42,9 +42,13 @@ class ModelRegistry:
         self.feature_scaler = None
         self.label_encoder = None
         
-        self.models_path = Path(os.getenv('MODELS_PATH', '../ai_module/models'))
-        self.scaler_path = Path(os.getenv('SCALER_PATH', '../ai_module/data/feature_scaler.pkl'))
-        self.encoder_path = Path(os.getenv('ENCODER_PATH', '../ai_module/data/label_encoder.pkl'))
+        # Get absolute path to project root
+        current_file = Path(__file__)  # ai_service/models_loader.py
+        project_root = current_file.parent.parent  # Go up 2 levels to workspace root
+        
+        self.models_path = Path(os.getenv('MODELS_PATH', str(project_root / 'ai_module' / 'models')))
+        self.scaler_path = Path(os.getenv('SCALER_PATH', str(project_root / 'ai_module' / 'data' / 'feature_scaler.pkl')))
+        self.encoder_path = Path(os.getenv('ENCODER_PATH', str(project_root / 'ai_module' / 'data' / 'label_encoder.pkl')))
         
         self._initialized = True
         self._loaded = False

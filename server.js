@@ -27,7 +27,7 @@ const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 const abiFile = JSON.parse(
-  fs.readFileSync("./artifacts/contracts/SoilDataStore.sol/SoilDataStore.json")
+  fs.readFileSync("./Dapp/smartContract/artifacts/contracts/AquaMindData.sol/AquaMindData.json")
 );
 const abi = abiFile.abi;
 
@@ -105,7 +105,27 @@ async function bridgePending(limit = 3) {
     const results = [];
     for (const r of claimed) {
       try {
-    const tx = await contract.storeData(
+        // Generate data hash for verification
+        const dataString = JSON.stringify({
+          id: r.id,
+          measured_at_epoch: r.measured_at_epoch,
+          soil_temperature_c: r.soil_temperature_c,
+          soil_moisture_pct: r.soil_moisture_pct,
+          conductivity_us_cm: r.conductivity_us_cm,
+          ph_value: r.ph_value,
+          nitrogen_mg_kg: r.nitrogen_mg_kg,
+          phosphorus_mg_kg: r.phosphorus_mg_kg,
+          potassium_mg_kg: r.potassium_mg_kg,
+          salt_mg_l: r.salt_mg_l,
+          air_temperature_c: r.air_temperature_c,
+          air_humidity_pct: r.air_humidity_pct,
+          is_raining: r.is_raining
+        });
+        const dataHash = ethers.keccak256(ethers.toUtf8Bytes(dataString));
+
+        // Call updated contract function: storeSensorReading (14 params)
+        const tx = await contract.storeSensorReading(
+          BigInt(r.id),  // _id (NEW!)
           BigInt(r.measured_at_epoch),
           BigInt(Math.round(Number(r.soil_temperature_c) * 10)),
           BigInt(Math.round(Number(r.soil_moisture_pct) * 10)),
@@ -117,7 +137,8 @@ async function bridgePending(limit = 3) {
           BigInt(Number(r.salt_mg_l)),
           BigInt(Math.round(Number(r.air_temperature_c) * 10)),
           BigInt(Math.round(Number(r.air_humidity_pct) * 10)),
-          BigInt(r.is_raining ? 1 : 0)
+          Boolean(r.is_raining),  // bool, not BigInt
+          dataHash  // _dataHash (NEW!)
         );
         const receipt = await tx.wait();
         await dbPool.query(
@@ -291,6 +312,7 @@ app.get("/getDataRange", async (req, res) => {
 app.post("/api/pushDailyInsight", async (req, res) => {
   try {
     const {
+      id,                  // Database ID (from daily_insights table)
       date,                // "2025-10-27"
       sampleCount,         // 48
       recommendedCrop,     // "coffee"
@@ -304,32 +326,46 @@ app.post("/api/pushDailyInsight", async (req, res) => {
     console.log(`\n📅 Pushing daily insight to blockchain for ${date}...`);
 
     // Validate inputs
-    if (!date || !recommendedCrop) {
-      return res.status(400).json({ error: "Missing required fields: date, recommendedCrop" });
+    if (!id || !date || !recommendedCrop) {
+      return res.status(400).json({ error: "Missing required fields: id, date, recommendedCrop" });
     }
 
     // Convert date to Unix timestamp (00:00:00 VN time)
     const dateTimestamp = Math.floor(new Date(date + "T00:00:00+07:00").getTime() / 1000);
 
     // Scale values
-    const confidenceScaled = Math.round((confidence || 0) * 10000);  // 98.5% → 9850
+    const confidenceScaled = Math.round((confidence || 0) * 100);  // 98.5% → 9850 (×100)
     const healthScoreScaled = Math.round((soilHealthScore || 0) * 10);  // 88.3 → 883
 
     // Convert rating to number
     const ratingMap = { "POOR": 0, "FAIR": 1, "GOOD": 2, "EXCELLENT": 3 };
-    const healthRatingNum = ratingMap[healthRating] || 0;
+    const healthRatingNum = ratingMap[healthRating?.toUpperCase()] || 1;
 
     // Convert recommendations to JSON string
     const recommendationsJson = JSON.stringify(recommendations || []);
+    
+    // Generate record hash
+    const dataToHash = JSON.stringify({
+      id,
+      date,
+      recommendedCrop,
+      confidence,
+      soilHealthScore,
+      healthRating
+    });
+    const recordHash = ethers.keccak256(ethers.toUtf8Bytes(dataToHash));
 
+    console.log(`   • ID: ${id}`);
     console.log(`   • Date: ${date} → Timestamp: ${dateTimestamp}`);
-    console.log(`   • Crop: ${recommendedCrop} (${confidence * 100}% confidence)`);
+    console.log(`   • Crop: ${recommendedCrop} (${(confidence * 100).toFixed(1)}% confidence)`);
     console.log(`   • Health: ${soilHealthScore}/100 (${healthRating})`);
     console.log(`   • Anomaly: ${isAnomalyDetected ? 'Yes' : 'No'}`);
     console.log(`   • Recommendations: ${recommendations?.length || 0} items`);
+    console.log(`   • Record Hash: ${recordHash.substring(0, 10)}...`);
 
-    // Call smart contract
+    // Call smart contract - NEW AquaMindData signature
     const tx = await contract.storeDailyInsight(
+      BigInt(id),
       BigInt(dateTimestamp),
       BigInt(sampleCount || 0),
       recommendedCrop,
@@ -337,7 +373,8 @@ app.post("/api/pushDailyInsight", async (req, res) => {
       BigInt(healthScoreScaled),
       healthRatingNum,
       Boolean(isAnomalyDetected),
-      recommendationsJson
+      recommendationsJson,
+      recordHash
     );
 
     console.log(`   ⏳ Transaction sent: ${tx.hash}`);

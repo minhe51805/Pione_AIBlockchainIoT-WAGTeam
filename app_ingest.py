@@ -58,6 +58,14 @@ def normalize_measured_at_vn(payload: dict) -> str | None:
 app = Flask(__name__)
 CORS(app)
 
+# Register auth blueprint
+from auth_routes import auth_bp
+app.register_blueprint(auth_bp)
+
+# Register dashboard blueprint
+from dashboard_routes import dashboard_bp
+app.register_blueprint(dashboard_bp)
+
 
 @app.route("/api/data", methods=["POST"])
 def receive_data():

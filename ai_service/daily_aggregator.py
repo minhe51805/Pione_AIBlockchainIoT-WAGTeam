@@ -195,6 +195,7 @@ def save_daily_insight(date: str, aggregated_data: Dict, ai_result: AIAnalysisRe
 
 
 def push_to_blockchain(
+    daily_insight_id: int,
     date: str,
     ai_result: AIAnalysisResponse,
     sample_count: int
@@ -203,6 +204,7 @@ def push_to_blockchain(
     Push daily AI insight to blockchain via Node.js bridge
     
     Args:
+        daily_insight_id: Database ID from daily_insights table
         date: Date string (YYYY-MM-DD)
         ai_result: AI analysis result
         sample_count: Number of samples aggregated
@@ -217,6 +219,7 @@ def push_to_blockchain(
         
         # Prepare payload
         payload = {
+            "id": daily_insight_id,
             "date": date,
             "sampleCount": sample_count,
             "recommendedCrop": ai_result.crop_recommendation.best_crop,

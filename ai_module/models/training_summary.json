@@ -11,7 +11,7 @@
     "file": "models/soil_health_scorer.pkl",
     "type": "RandomForestRegressor",
     "task": "Regression (Soil health 0-100)",
-    "mae": "2.43",
+    "mae": "2.44",
     "target": "<5.0",
     "status": "\u2705 PASS"
   },

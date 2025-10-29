@@ -231,6 +231,7 @@ async def analyze_daily(request: DailyAggregateInput):
         
         # 4. Push to blockchain (async, don't block response)
         blockchain_success, tx_hash, blockchain_status = push_to_blockchain(
+            daily_insight_id=record_id,
             date=request.date,
             ai_result=ai_result,
             sample_count=aggregated_data['sample_count']
