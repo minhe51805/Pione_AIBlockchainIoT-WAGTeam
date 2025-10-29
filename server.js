@@ -94,8 +94,10 @@ async function bridgePending(limit = 3) {
       WHERE s.id = c.id
       RETURNING s.id,
                 EXTRACT(EPOCH FROM s.measured_at_vn AT TIME ZONE 'Asia/Ho_Chi_Minh')::bigint AS measured_at_epoch,
-                s.temperature_c, s.humidity_pct, s.conductivity_us_cm, s.ph_value,
-                s.nitrogen_mg_kg, s.phosphorus_mg_kg, s.potassium_mg_kg, s.salt_mg_l;
+                s.soil_temperature_c, s.soil_moisture_pct,
+                s.conductivity_us_cm, s.ph_value,
+                s.nitrogen_mg_kg, s.phosphorus_mg_kg, s.potassium_mg_kg, s.salt_mg_l,
+                s.air_temperature_c, s.air_humidity_pct, s.is_raining;
     `;
     const { rows: claimed } = await client.query(claimSql, [limit, workerId]);
     await client.query('COMMIT');
@@ -103,16 +105,19 @@ async function bridgePending(limit = 3) {
     const results = [];
     for (const r of claimed) {
       try {
-        const tx = await contract.storeData(
+    const tx = await contract.storeData(
           BigInt(r.measured_at_epoch),
-          BigInt(Math.round(Number(r.temperature_c) * 10)),
-          BigInt(Math.round(Number(r.humidity_pct) * 10)),
+          BigInt(Math.round(Number(r.soil_temperature_c) * 10)),
+          BigInt(Math.round(Number(r.soil_moisture_pct) * 10)),
           BigInt(Number(r.conductivity_us_cm)),
           BigInt(Math.round(Number(r.ph_value) * 10)),
           BigInt(Number(r.nitrogen_mg_kg)),
           BigInt(Number(r.phosphorus_mg_kg)),
           BigInt(Number(r.potassium_mg_kg)),
-          BigInt(Number(r.salt_mg_l))
+          BigInt(Number(r.salt_mg_l)),
+          BigInt(Math.round(Number(r.air_temperature_c) * 10)),
+          BigInt(Math.round(Number(r.air_humidity_pct) * 10)),
+          BigInt(r.is_raining ? 1 : 0)
         );
         const receipt = await tx.wait();
         await dbPool.query(
@@ -217,14 +222,17 @@ app.get("/getData", async (req, res) => {
       records.push({
         id: i,
         measuredAtVN: formatEpochToVnString(Number(r.measuredAtVN)),
-        temperatureC: Number(r.temperatureC) / 10,
-        humidityPct: Number(r.humidityPct) / 10,
+        soilTemperature: Number(r.soilTemperature) / 10,
+        soilMoisture: Number(r.soilMoisture) / 10,
         conductivity: Number(r.conductivity),
         phValue: Number(r.phValue) / 10,
         nitrogen: Number(r.nitrogen),
         phosphorus: Number(r.phosphorus),
         potassium: Number(r.potassium),
         salt: Number(r.salt),
+        airTemperature: Number(r.airTemperature) / 10,
+        airHumidity: Number(r.airHumidity) / 10,
+        isRaining: Number(r.isRaining) === 1,
         reporter: r.reporter
       });
     }
@@ -251,15 +259,192 @@ app.get("/getDataRange", async (req, res) => {
     const result = list.map((r, i) => ({
       id: i,
       measuredAtVN: formatEpochToVnString(Number(r.measuredAtVN)),
-      temperatureC: Number(r.temperatureC) / 10,
-      humidityPct: Number(r.humidityPct),
-      moisturePct: Number(r.moisturePct),
+      soilTemperature: Number(r.soilTemperature) / 10,
+      soilMoisture: Number(r.soilMoisture) / 10,
+      conductivity: Number(r.conductivity),
+      phValue: Number(r.phValue) / 10,
+      nitrogen: Number(r.nitrogen),
+      phosphorus: Number(r.phosphorus),
+      potassium: Number(r.potassium),
+      salt: Number(r.salt),
+      airTemperature: Number(r.airTemperature) / 10,
+      airHumidity: Number(r.airHumidity) / 10,
+      isRaining: Number(r.isRaining) === 1,
       reporter: r.reporter
     }));
 
     res.json(result);
   } catch (err) {
     console.error("/getDataRange error:", err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+// ============================================================
+// DAILY AI INSIGHTS ENDPOINTS
+// ============================================================
+
+/**
+ * Push daily AI insight to blockchain
+ * Called by AI service after daily aggregation
+ */
+app.post("/api/pushDailyInsight", async (req, res) => {
+  try {
+    const {
+      date,                // "2025-10-27"
+      sampleCount,         // 48
+      recommendedCrop,     // "coffee"
+      confidence,          // 0.985
+      soilHealthScore,     // 88.3
+      healthRating,        // "EXCELLENT"
+      isAnomalyDetected,   // false
+      recommendations      // [{priority: "HIGH", message: "..."}]
+    } = req.body;
+
+    console.log(`\n📅 Pushing daily insight to blockchain for ${date}...`);
+
+    // Validate inputs
+    if (!date || !recommendedCrop) {
+      return res.status(400).json({ error: "Missing required fields: date, recommendedCrop" });
+    }
+
+    // Convert date to Unix timestamp (00:00:00 VN time)
+    const dateTimestamp = Math.floor(new Date(date + "T00:00:00+07:00").getTime() / 1000);
+
+    // Scale values
+    const confidenceScaled = Math.round((confidence || 0) * 10000);  // 98.5% → 9850
+    const healthScoreScaled = Math.round((soilHealthScore || 0) * 10);  // 88.3 → 883
+
+    // Convert rating to number
+    const ratingMap = { "POOR": 0, "FAIR": 1, "GOOD": 2, "EXCELLENT": 3 };
+    const healthRatingNum = ratingMap[healthRating] || 0;
+
+    // Convert recommendations to JSON string
+    const recommendationsJson = JSON.stringify(recommendations || []);
+
+    console.log(`   • Date: ${date} → Timestamp: ${dateTimestamp}`);
+    console.log(`   • Crop: ${recommendedCrop} (${confidence * 100}% confidence)`);
+    console.log(`   • Health: ${soilHealthScore}/100 (${healthRating})`);
+    console.log(`   • Anomaly: ${isAnomalyDetected ? 'Yes' : 'No'}`);
+    console.log(`   • Recommendations: ${recommendations?.length || 0} items`);
+
+    // Call smart contract
+    const tx = await contract.storeDailyInsight(
+      BigInt(dateTimestamp),
+      BigInt(sampleCount || 0),
+      recommendedCrop,
+      BigInt(confidenceScaled),
+      BigInt(healthScoreScaled),
+      healthRatingNum,
+      Boolean(isAnomalyDetected),
+      recommendationsJson
+    );
+
+    console.log(`   ⏳ Transaction sent: ${tx.hash}`);
+    console.log(`   ⏳ Waiting for confirmation...`);
+
+    const receipt = await tx.wait();
+
+    console.log(`   ✅ Confirmed! Block: ${receipt.blockNumber}`);
+
+    res.json({
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+      date: date
+    });
+
+  } catch (err) {
+    console.error("❌ /api/pushDailyInsight error:", err);
+    res.status(500).json({
+      error: err?.message || String(err),
+      details: err?.reason || "Unknown error"
+    });
+  }
+});
+
+/**
+ * Get all daily insights from blockchain
+ */
+app.get("/api/getDailyInsights", async (req, res) => {
+  try {
+    const count = Number(await contract.getDailyInsightCount());
+    console.log(`\n📊 Fetching ${count} daily insights from blockchain...`);
+
+    let insights = [];
+    for (let i = 0; i < count; i++) {
+      const r = await contract.getDailyInsight(i);
+      
+      // Convert rating number to string
+      const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
+      
+      // Parse recommendations JSON
+      let recommendations = [];
+      try {
+        recommendations = JSON.parse(r.recommendations || "[]");
+      } catch (e) {
+        console.warn(`Failed to parse recommendations for insight ${i}`);
+      }
+      
+      insights.push({
+        id: i,
+        date: formatEpochToVnString(Number(r.dateTimestamp)),
+        sampleCount: Number(r.sampleCount),
+        recommendedCrop: r.recommendedCrop,
+        confidence: Number(r.confidence) / 10000,  // 9850 → 0.985
+        soilHealthScore: Number(r.soilHealthScore) / 10,  // 883 → 88.3
+        healthRating: ratingMap[r.healthRating] || "UNKNOWN",
+        isAnomalyDetected: r.isAnomalyDetected,
+        recommendations: recommendations,
+        reporter: r.reporter
+      });
+    }
+
+    console.log(`   ✅ Retrieved ${insights.length} insights`);
+    res.json(insights);
+
+  } catch (err) {
+    console.error("❌ /api/getDailyInsights error:", err);
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+/**
+ * Get latest daily insight
+ */
+app.get("/api/getLatestDailyInsight", async (req, res) => {
+  try {
+    console.log("\n📊 Fetching latest daily insight...");
+    
+    const r = await contract.getLatestDailyInsight();
+    
+    const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
+    
+    // Parse recommendations JSON
+    let recommendations = [];
+    try {
+      recommendations = JSON.parse(r.recommendations || "[]");
+    } catch (e) {
+      console.warn("Failed to parse recommendations for latest insight");
+    }
+    
+    const insight = {
+      date: formatEpochToVnString(Number(r.dateTimestamp)),
+      sampleCount: Number(r.sampleCount),
+      recommendedCrop: r.recommendedCrop,
+      confidence: Number(r.confidence) / 10000,
+      soilHealthScore: Number(r.soilHealthScore) / 10,
+      healthRating: ratingMap[r.healthRating] || "UNKNOWN",
+      isAnomalyDetected: r.isAnomalyDetected,
+      recommendations: recommendations,
+      reporter: r.reporter
+    };
+
+    console.log(`   ✅ Latest: ${insight.date} - ${insight.recommendedCrop}`);
+    res.json(insight);
+
+  } catch (err) {
+    console.error("❌ /api/getLatestDailyInsight error:", err);
     res.status(500).json({ error: err?.message || String(err) });
   }
 });

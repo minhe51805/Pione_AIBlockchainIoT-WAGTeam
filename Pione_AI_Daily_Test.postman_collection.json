@@ -1,0 +1,79 @@
+{
+  "info": {
+    "name": "Pione AI - Daily Insight Test",
+    "description": "Test daily AI aggregation + blockchain push",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Daily Aggregation (AI Service)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"date\": \"2025-10-27\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/ai/analyze-daily",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ai", "analyze-daily"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Get Latest Insight (Blockchain)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/getLatestDailyInsight",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "getLatestDailyInsight"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Get All Insights (Blockchain)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/getDailyInsights",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "getDailyInsights"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Health Check (AI Service)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ai/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ai", "health"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+

@@ -1,0 +1,117 @@
+{
+  "crops": [
+    "apple",
+    "banana",
+    "blackgram",
+    "chickpea",
+    "coconut",
+    "coffee",
+    "cotton",
+    "grapes",
+    "jute",
+    "kidneybeans",
+    "lentil",
+    "maize",
+    "mango",
+    "mothbeans",
+    "mungbean",
+    "muskmelon",
+    "orange",
+    "papaya",
+    "pigeonpeas",
+    "pomegranate",
+    "rice",
+    "watermelon"
+  ],
+  "count": 22,
+  "metrics": [
+    {
+      "crop": "apple",
+      "val_mae": 11.418946421861401
+    },
+    {
+      "crop": "banana",
+      "val_mae": 11.233987265240488
+    },
+    {
+      "crop": "blackgram",
+      "val_mae": 11.578996576066515
+    },
+    {
+      "crop": "chickpea",
+      "val_mae": 10.782366089674424
+    },
+    {
+      "crop": "coconut",
+      "val_mae": 11.452892767542513
+    },
+    {
+      "crop": "coffee",
+      "val_mae": 11.024851775749774
+    },
+    {
+      "crop": "cotton",
+      "val_mae": 11.46898544916634
+    },
+    {
+      "crop": "grapes",
+      "val_mae": 11.135643492215912
+    },
+    {
+      "crop": "jute",
+      "val_mae": 11.744151851056047
+    },
+    {
+      "crop": "kidneybeans",
+      "val_mae": 10.896838988727197
+    },
+    {
+      "crop": "lentil",
+      "val_mae": 12.470219746514392
+    },
+    {
+      "crop": "maize",
+      "val_mae": 11.685993884481512
+    },
+    {
+      "crop": "mango",
+      "val_mae": 10.928313873130932
+    },
+    {
+      "crop": "mothbeans",
+      "val_mae": 11.57092703090352
+    },
+    {
+      "crop": "mungbean",
+      "val_mae": 10.139751586209384
+    },
+    {
+      "crop": "muskmelon",
+      "val_mae": 11.048506594663635
+    },
+    {
+      "crop": "orange",
+      "val_mae": 10.649795073213985
+    },
+    {
+      "crop": "papaya",
+      "val_mae": 11.035625401898786
+    },
+    {
+      "crop": "pigeonpeas",
+      "val_mae": 11.760234677147958
+    },
+    {
+      "crop": "pomegranate",
+      "val_mae": 11.165380404593568
+    },
+    {
+      "crop": "rice",
+      "val_mae": 11.305082848570041
+    },
+    {
+      "crop": "watermelon",
+      "val_mae": 11.462379140621849
+    }
+  ]
+}

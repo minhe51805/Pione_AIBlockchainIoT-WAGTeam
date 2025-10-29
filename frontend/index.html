@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 Pione Soil Analysis Dashboard</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: bold;
+            padding: 15px 20px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .ai-result-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .crop-bar {
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .crop-bar-fill {
+            background: white;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: #667eea;
+            font-weight: bold;
+            transition: width 0.5s;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner.active {
+            display: block;
+        }
+        
+        .btn-analyze {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            transition: transform 0.3s;
+        }
+        
+        .btn-analyze:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn-trigger {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            transition: transform 0.3s;
+            color: white;
+        }
+        
+        .btn-trigger:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #0d7a6f 0%, #2bc95f 100%);
+        }
+        
+        .badge-excellent {
+            background: #28a745;
+        }
+        
+        .badge-good {
+            background: #17a2b8;
+        }
+        
+        .badge-fair {
+            background: #ffc107;
+        }
+        
+        .badge-poor {
+            background: #dc3545;
+        }
+        
+        .recommendation-item {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .recommendation-item.CRITICAL {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .recommendation-item.HIGH {
+            border-left-color: #ff6b6b;
+            background: #fff8f8;
+        }
+        
+        .recommendation-item.MEDIUM {
+            border-left-color: #ffc107;
+            background: #fffef5;
+        }
+        
+        .recommendation-item.LOW {
+            border-left-color: #17a2b8;
+            background: #f5fcfd;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+        
+        .priority-badge.CRITICAL {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .priority-badge.HIGH {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .priority-badge.MEDIUM {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .priority-badge.LOW {
+            background: #17a2b8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="text-center text-white mb-4">
+            <h1><i class="fas fa-seedling"></i> PIONE SOIL ANALYSIS</h1>
+            <p class="lead">AI-Powered Soil Health Dashboard</p>
+        </div>
+
+        <!-- Date Selection Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt"></i> Select Date for Analysis
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="dateInput" class="form-label">Choose Date:</label>
+                        <input type="date" class="form-control form-control-lg" id="dateInput" value="">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-analyze" onclick="analyzeDate()">
+                                <i class="fas fa-chart-line"></i> Analyze
+                            </button>
+                            <button class="btn btn-success btn-trigger" onclick="triggerDailyPipeline()">
+                                <i class="fas fa-rocket"></i> Trigger Daily Pipeline
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">
+                    <strong>Analyze:</strong> View existing data for selected date<br>
+                    <strong>Trigger:</strong> Run full pipeline (Aggregate → AI → DB → Blockchain)
+                </small>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-white mt-3">Analyzing soil data...</p>
+        </div>
+
+        <!-- Results Container (Hidden initially) -->
+        <div id="resultsContainer" style="display: none;">
+            <!-- Daily Summary Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i> Daily Data Summary
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card">
+                                <i class="fas fa-database fa-2x mb-2" style="color: #667eea;"></i>
+                                <div class="stat-value" id="sampleCount">-</div>
+                                <div class="stat-label">Readings</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card">
+                                <i class="fas fa-clock fa-2x mb-2" style="color: #667eea;"></i>
+                                <div class="stat-value" id="timeRange">-</div>
+                                <div class="stat-label">Time Span</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card">
+                                <i class="fas fa-calendar-day fa-2x mb-2" style="color: #667eea;"></i>
+                                <div class="stat-value" id="selectedDate">-</div>
+                                <div class="stat-label">Date</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensor Values -->
+                    <h5 class="mt-4 mb-3"><i class="fas fa-thermometer-half"></i> Average Sensor Values</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Soil Temp</small>
+                                    <h4 class="text-primary" id="soilTemp">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Soil Moisture</small>
+                                    <h4 class="text-info" id="soilMoisture">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">pH</small>
+                                    <h4 class="text-success" id="phValue">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">EC</small>
+                                    <h4 class="text-warning" id="ecValue">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <small class="text-muted">N-P-K (mg/kg)</small>
+                                    <h5 id="npkValues">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <small class="text-muted">Air Temp / Humidity</small>
+                                    <h5 id="airValues">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <small class="text-muted">Rain Status</small>
+                                    <h5 id="rainStatus">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <h5 class="mt-4 mb-3"><i class="fas fa-chart-area"></i> Sensor Data Visualization</h5>
+                    <canvas id="sensorChart" height="80"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Analysis Results -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-brain"></i> AI Analysis Results
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Crop Recommendation -->
+                        <div class="col-md-6 mb-3">
+                            <div class="ai-result-card">
+                                <h5><i class="fas fa-leaf"></i> Recommended Crop</h5>
+                                <h2 id="recommendedCrop">-</h2>
+                                <p class="mb-0">Confidence: <span id="cropConfidence">-</span></p>
+                                
+                                <div class="mt-3">
+                                    <small><strong>Top 3 Alternatives:</strong></small>
+                                    <div id="top3Crops"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Soil Health -->
+                        <div class="col-md-6 mb-3">
+                            <div class="ai-result-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <h5><i class="fas fa-heart"></i> Soil Health Score</h5>
+                                <h1 id="soilHealthScore">-</h1>
+                                <h4><span class="badge" id="soilHealthRating">-</span></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actionable Recommendations -->
+                    <div class="mt-4" id="recommendationsSection" style="display: none;">
+                        <h5 class="mb-3"><i class="fas fa-lightbulb"></i> Khuyến nghị hành động</h5>
+                        <div id="recommendationsList"></div>
+                    </div>
+
+                    <!-- Anomaly Detection -->
+                    <div class="alert" id="anomalyAlert" style="display: none;">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Anomaly Detection</h5>
+                        <p id="anomalyStatus">-</p>
+                    </div>
+
+                    <!-- Processing Time -->
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> Processing time: <span id="processingTime">-</span>ms
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger" id="errorAlert" style="display: none;">
+            <h5><i class="fas fa-times-circle"></i> Error</h5>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
+
