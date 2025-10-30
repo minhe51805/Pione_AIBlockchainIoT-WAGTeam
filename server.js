@@ -27,7 +27,7 @@ const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 const abiFile = JSON.parse(
-  fs.readFileSync("./Dapp/smartContract/artifacts/contracts/AquaMindData.sol/AquaMindData.json")
+  fs.readFileSync("./artifacts/contracts/SoilDataStore.sol/SoilDataStore.json")
 );
 const abi = abiFile.abi;
 
@@ -363,7 +363,7 @@ app.post("/api/pushDailyInsight", async (req, res) => {
     console.log(`   • Recommendations: ${recommendations?.length || 0} items`);
     console.log(`   • Record Hash: ${recordHash.substring(0, 10)}...`);
 
-    // Call smart contract - NEW AquaMindData signature
+    // Call smart contract - NEW AgroTwinData signature
     const tx = await contract.storeDailyInsight(
       BigInt(id),
       BigInt(dateTimestamp),

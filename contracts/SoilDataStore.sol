@@ -17,6 +17,7 @@ contract SoilDataStore {
     // - airHumidity: Air humidity % × 10 (65.0% → 650)
     // - isRaining: 0 = không mưa, 1 = đang mưa
     struct SoilData {
+        uint256 id;             // Database ID for tracking
         uint256 measuredAtVN;
         // SOIL PARAMETERS (8)
         uint256 soilTemperature;
@@ -31,6 +32,7 @@ contract SoilDataStore {
         uint256 airTemperature;
         uint256 airHumidity;
         uint256 isRaining;
+        bytes32 dataHash;       // Hash for data verification
         address reporter;
     }
 
@@ -50,6 +52,7 @@ contract SoilDataStore {
     // - isAnomalyDetected: 0=false, 1=true
     // - recommendations: JSON string of actionable recommendations
     struct DailyInsight {
+        uint256 id;                 // Database ID for tracking
         uint256 dateTimestamp;      // Date (YYYY-MM-DD 00:00:00)
         uint256 sampleCount;        // Number of readings that day
         string recommendedCrop;     // AI crop recommendation
@@ -58,6 +61,7 @@ contract SoilDataStore {
         uint8 healthRating;         // 0-3 (POOR to EXCELLENT)
         bool isAnomalyDetected;     // Anomaly flag
         string recommendations;     // JSON: [{"priority":"HIGH","message":"..."}]
+        bytes32 recordHash;         // Hash for data verification
         address reporter;
     }
     
@@ -80,11 +84,13 @@ contract SoilDataStore {
         uint256 airTemperature,
         uint256 airHumidity,
         uint256 isRaining,
+        bytes32 dataHash,
         address reporter
     );
 
-    // Ghi dữ liệu từ DB (đã chuẩn hóa)
-    function storeData(
+    // Ghi dữ liệu từ DB (đã chuẩn hóa) với verification
+    function storeSensorReading(
+        uint256 _id,
         uint256 _measuredAtVN,
         uint256 _soilTemperature,
         uint256 _soilMoisture,
@@ -96,10 +102,12 @@ contract SoilDataStore {
         uint256 _salt,
         uint256 _airTemperature,
         uint256 _airHumidity,
-        uint256 _isRaining
+        bool _isRaining,
+        bytes32 _dataHash
     ) public {
         records.push(
             SoilData({
+                id: _id,
                 measuredAtVN: _measuredAtVN,
                 soilTemperature: _soilTemperature,
                 soilMoisture: _soilMoisture,
@@ -111,7 +119,8 @@ contract SoilDataStore {
                 salt: _salt,
                 airTemperature: _airTemperature,
                 airHumidity: _airHumidity,
-                isRaining: _isRaining,
+                isRaining: _isRaining ? 1 : 0,
+                dataHash: _dataHash,
                 reporter: msg.sender
             })
         );
@@ -129,8 +138,43 @@ contract SoilDataStore {
             _salt,
             _airTemperature,
             _airHumidity,
-            _isRaining,
+            _isRaining ? 1 : 0,
+            _dataHash,
             msg.sender
+        );
+    }
+
+    // Legacy function for backward compatibility
+    function storeData(
+        uint256 _measuredAtVN,
+        uint256 _soilTemperature,
+        uint256 _soilMoisture,
+        uint256 _conductivity,
+        uint256 _phValue,
+        uint256 _nitrogen,
+        uint256 _phosphorus,
+        uint256 _potassium,
+        uint256 _salt,
+        uint256 _airTemperature,
+        uint256 _airHumidity,
+        uint256 _isRaining
+    ) public {
+        // Call new function with default values
+        storeSensorReading(
+            0, // No DB id
+            _measuredAtVN,
+            _soilTemperature,
+            _soilMoisture,
+            _conductivity,
+            _phValue,
+            _nitrogen,
+            _phosphorus,
+            _potassium,
+            _salt,
+            _airTemperature,
+            _airHumidity,
+            _isRaining > 0,
+            bytes32(0) // No hash
         );
     }
 
@@ -149,6 +193,7 @@ contract SoilDataStore {
     
     /**
      * @dev Store daily aggregated AI insight
+     * @param _id Database ID for tracking
      * @param _dateTimestamp Unix timestamp for date (YYYY-MM-DD 00:00:00 VN time)
      * @param _sampleCount Number of readings that day
      * @param _recommendedCrop AI recommended crop name
@@ -157,8 +202,10 @@ contract SoilDataStore {
      * @param _healthRating 0=POOR, 1=FAIR, 2=GOOD, 3=EXCELLENT
      * @param _isAnomalyDetected Whether anomaly was detected
      * @param _recommendations JSON string of recommendations
+     * @param _recordHash Hash for data verification
      */
     function storeDailyInsight(
+        uint256 _id,
         uint256 _dateTimestamp,
         uint256 _sampleCount,
         string memory _recommendedCrop,
@@ -166,13 +213,15 @@ contract SoilDataStore {
         uint256 _soilHealthScore,
         uint8 _healthRating,
         bool _isAnomalyDetected,
-        string memory _recommendations
+        string memory _recommendations,
+        bytes32 _recordHash
     ) public {
         require(_healthRating <= 3, "Invalid health rating");
         require(!dailyInsightExists[_dateTimestamp], "Daily insight for this date already exists");
         
         dailyInsights.push(
             DailyInsight({
+                id: _id,
                 dateTimestamp: _dateTimestamp,
                 sampleCount: _sampleCount,
                 recommendedCrop: _recommendedCrop,
@@ -181,6 +230,7 @@ contract SoilDataStore {
                 healthRating: _healthRating,
                 isAnomalyDetected: _isAnomalyDetected,
                 recommendations: _recommendations,
+                recordHash: _recordHash,
                 reporter: msg.sender
             })
         );

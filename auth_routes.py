@@ -1,6 +1,7 @@
 """
-Authentication Routes - Passkey-based Authentication for Farmers
+Authentication Routes - Multi-method Authentication for Farmers
 Handles: Registration, Login, Profile Management
+Supports: Passkey (biometric) and PIN-based authentication
 """
 
 from flask import Blueprint, request, jsonify
@@ -9,6 +10,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import hashlib
+import bcrypt
 
 load_dotenv('.env')
 
@@ -392,6 +394,254 @@ def update_profile(user_id):
         
     except Exception as e:
         print(f"❌ Update profile error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# ====== PIN-based Authentication Routes ======
+
+@auth_bp.route('/register-pin', methods=['POST'])
+def register_pin():
+    """
+    Register new user with PIN
+    
+    Request body:
+    {
+        "full_name": "Nguyen Van A",
+        "email": "user@example.com",
+        "pin": "1234",
+        "phone": "0912345678",
+        "farm_name": "Nong trai Van A",
+        "farm_area_hectares": 2.5,
+        "current_crop": "coffee",
+        "wallet_address": "0x..."
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "user_id": 1,
+        "wallet_address": "0x...",
+        "message": "Đăng ký thành công!"
+    }
+    """
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required = ['full_name', 'email', 'pin']
+        for field in required:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'error': f'Thiếu trường bắt buộc: {field}'
+                }), 400
+        
+        # Validate PIN length
+        pin = data['pin']
+        if len(pin) < 4 or len(pin) > 6:
+            return jsonify({
+                'success': False,
+                'error': 'Mã PIN phải có 4-6 số'
+            }), 400
+        
+        # Generate wallet address from email if not provided
+        wallet_address = data.get('wallet_address') or generate_wallet_address(data['email'])
+        
+        # Hash PIN
+        pin_hash = bcrypt.hashpw(pin.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if email already exists
+        cur.execute("SELECT id FROM users WHERE email = %s", (data['email'],))
+        existing = cur.fetchone()
+        if existing:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Email đã được đăng ký'
+            }), 400
+        
+        # Insert new user with PIN
+        insert_query = """
+            INSERT INTO users (
+                full_name, email, phone,
+                pin_hash,
+                wallet_address, wallet_created_at_vn,
+                farm_name, farm_area_hectares, current_crop,
+                is_active, created_at_vn, updated_at_vn, last_login_at_vn
+            ) VALUES (
+                %s, %s, %s,
+                %s,
+                %s, NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh',
+                %s, %s, %s,
+                TRUE, NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'
+            )
+            RETURNING id, wallet_address
+        """
+        
+        cur.execute(insert_query, (
+            data['full_name'],
+            data['email'],
+            data.get('phone'),
+            pin_hash,
+            wallet_address,
+            data.get('farm_name'),
+            data.get('farm_area_hectares'),
+            data.get('current_crop')
+        ))
+        
+        user_id, wallet_addr = cur.fetchone()
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        print(f"✅ New user registered with PIN: {data['full_name']} (ID: {user_id}, Wallet: {wallet_addr})")
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'wallet_address': wallet_addr,
+            'message': f'Đăng ký thành công! Ví của bạn: {wallet_addr}'
+        }), 201
+        
+    except Exception as e:
+        print(f"❌ PIN Registration error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@auth_bp.route('/login-pin', methods=['POST'])
+def login_pin():
+    """
+    Login with PIN (accepts email or phone)
+    
+    Request body:
+    {
+        "email_or_phone": "user@example.com hoặc 0912345678",
+        "pin": "1234"
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "user": {
+            "id": 1,
+            "full_name": "Nguyen Van A",
+            "phone": "0912345678",
+            "wallet_address": "0x...",
+            ...
+        }
+    }
+    """
+    try:
+        data = request.json
+        email_or_phone = data.get('email_or_phone')
+        pin = data.get('pin')
+        
+        if not email_or_phone or not pin:
+            return jsonify({
+                'success': False,
+                'error': 'Thiếu email/số điện thoại hoặc mã PIN'
+            }), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Find user by email OR phone
+        cur.execute("""
+            SELECT 
+                id, full_name, phone, email,
+                wallet_address,
+                farm_name, farm_location_lat, farm_location_lon, farm_area_hectares, current_crop,
+                pin_hash,
+                is_active
+            FROM users
+            WHERE email = %s OR phone = %s
+        """, (email_or_phone, email_or_phone))
+        
+        user_row = cur.fetchone()
+        
+        if not user_row:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Không tìm thấy tài khoản với email/số điện thoại này'
+            }), 404
+        
+        # Check if PIN hash exists
+        pin_hash = user_row[10]
+        if not pin_hash:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Tài khoản này không sử dụng xác thực PIN'
+            }), 400
+        
+        # Verify PIN
+        if not bcrypt.checkpw(pin.encode('utf-8'), pin_hash.encode('utf-8')):
+            cur.close()
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Mã PIN không đúng'
+            }), 401
+        
+        # Check if active
+        if not user_row[11]:  # is_active
+            cur.close()
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Tài khoản đã bị vô hiệu hóa'
+            }), 403
+        
+        # Update last login
+        cur.execute("""
+            UPDATE users
+            SET last_login_at_vn = NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh',
+                updated_at_vn = NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'
+            WHERE id = %s
+        """, (user_row[0],))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Build user object
+        user = {
+            'id': user_row[0],
+            'full_name': user_row[1],
+            'phone': user_row[2],
+            'email': user_row[3],
+            'wallet_address': user_row[4],
+            'farm_name': user_row[5],
+            'farm_location_lat': user_row[6],
+            'farm_location_lon': user_row[7],
+            'farm_area_hectares': user_row[8],
+            'current_crop': user_row[9],
+        }
+        
+        print(f"✅ User logged in with PIN: {user['full_name']} (ID: {user['id']})")
+        
+        return jsonify({
+            'success': True,
+            'user': user,
+            'message': f'Chào mừng {user["full_name"]}!'
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ PIN Login error: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

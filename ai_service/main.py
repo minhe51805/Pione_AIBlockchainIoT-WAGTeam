@@ -6,6 +6,7 @@ Main entry point for AI analysis service
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 import logging
 import time
 from datetime import datetime
@@ -33,11 +34,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+# Track startup time for uptime
+START_TIME = time.time()
+
+# Lifespan event handler
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler (replaces deprecated on_event)"""
+    # Startup
+    logger.info("=" * 80)
+    logger.info("🚀 STARTING AI SERVICE...")
+    logger.info("=" * 80)
+    
+    try:
+        # Just initialize registry, don't load all models yet
+        models = get_model_registry()
+        logger.info("✅ Model registry initialized (models will load on first request)")
+        
+        logger.info("\n✅ AI Service ready to accept requests!")
+        logger.info(f"   Listening on: http://{os.getenv('AI_SERVICE_HOST', '0.0.0.0')}:{os.getenv('AI_SERVICE_PORT', 8000)}")
+        logger.info("=" * 80 + "\n")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize: {e}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 Shutting down AI Service...")
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="Pione AI Service",
     description="AI Analysis Service for Soil Data (4 Models)",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -48,29 +80,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Track startup time for uptime
-START_TIME = time.time()
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Load models on startup"""
-    logger.info("=" * 80)
-    logger.info("🚀 STARTING AI SERVICE...")
-    logger.info("=" * 80)
-    
-    try:
-        models = get_model_registry()
-        models.load_all()
-        
-        logger.info("\n✅ AI Service ready to accept requests!")
-        logger.info(f"   Listening on: http://{os.getenv('AI_SERVICE_HOST', '0.0.0.0')}:{os.getenv('AI_SERVICE_PORT', 8000)}")
-        logger.info("=" * 80 + "\n")
-        
-    except Exception as e:
-        logger.error(f"❌ Failed to load models: {e}")
-        raise
 
 
 @app.get("/", tags=["Root"])
@@ -96,6 +105,14 @@ async def health_check():
     Returns status and loaded models info
     """
     models = get_model_registry()
+    
+    # Try to load models if not loaded yet (lazy loading)
+    if not models.validate_loaded():
+        try:
+            logger.info("🔄 Lazy loading models on first health check...")
+            models.load_all()
+        except Exception as e:
+            logger.error(f"❌ Failed to load models: {e}")
     
     uptime = time.time() - START_TIME
     
@@ -147,12 +164,18 @@ async def analyze_soil_data(data: SoilDataInput):
     try:
         models = get_model_registry()
         
-        # Validate models loaded
+        # Lazy load models if not loaded yet
         if not models.validate_loaded():
-            raise HTTPException(
-                status_code=503,
-                detail="Models not loaded. Service unavailable."
-            )
+            try:
+                logger.info("🔄 Lazy loading models (first request)...")
+                models.load_all()
+                logger.info("✅ Models loaded successfully!")
+            except Exception as e:
+                logger.error(f"❌ Failed to load models: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Models not loaded: {str(e)}"
+                )
         
         # Validate crop name if validation mode
         if data.mode == "validation":
@@ -202,11 +225,18 @@ async def analyze_daily(request: DailyAggregateInput):
     try:
         models = get_model_registry()
         
+        # Lazy load models if not loaded yet
         if not models.validate_loaded():
-            raise HTTPException(
-                status_code=503,
-                detail="Models not loaded"
-            )
+            try:
+                logger.info("🔄 Lazy loading models (first request)...")
+                models.load_all()
+                logger.info("✅ Models loaded successfully!")
+            except Exception as e:
+                logger.error(f"❌ Failed to load models: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Models not loaded: {str(e)}"
+                )
         
         logger.info(f"\n📅 Daily aggregation request for date: {request.date}")
         

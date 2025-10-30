@@ -162,6 +162,8 @@ class AIAnalysisResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Health check response"""
+    model_config = {"protected_namespaces": ()}  # Fix pydantic warning
+    
     status: str
     models_loaded: int
     model_names: List[str]
