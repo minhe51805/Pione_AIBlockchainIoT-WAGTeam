@@ -1,0 +1,588 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Animations for Unique UI */
+@keyframes shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes blob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -50px) scale(1.1);
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  75% {
+    transform: translate(50px, 50px) scale(1.05);
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { 
+    background-position: 0% 50%; 
+  }
+  50% { 
+    background-position: 100% 50%; 
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+@keyframes slide-in {
+  from { 
+    transform: translateX(100%); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateX(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 30px rgba(52, 211, 153, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@layer base {
+  :root {
+    /* Copper & Linen Theme */
+    --background: 30 67% 94%;      /* #faf0e6 linen */
+    --foreground: 0 0% 18%;         /* #2d2d2d dark gray */
+    --card: 0 0% 100%;              /* #ffffff white */
+    --card-foreground: 0 0% 18%;    /* #2d2d2d */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 18%;
+    --primary: 25 65% 46%;          /* #b87333 copper */
+    --primary-foreground: 0 0% 100%;/* white text on copper */
+    --secondary: 30 67% 94%;        /* linen */
+    --secondary-foreground: 0 0% 18%;
+    --muted: 30 40% 88%;            /* lighter beige */
+    --muted-foreground: 25 30% 35%; /* dark brown */
+    --accent: 25 65% 46%;           /* copper */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 25 40% 75%;           /* light copper */
+    --input: 30 40% 88%;
+    --ring: 25 65% 46%;             /* copper */
+    --chart-1: 25 65% 46%;          /* copper */
+    --chart-2: 25 50% 38%;          /* darker copper */
+    --chart-3: 30 67% 94%;          /* linen */
+    --chart-4: 30 50% 80%;          /* tan */
+    --chart-5: 25 40% 60%;          /* light copper */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  /* Tăng font size cho người trung niên */
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-size: 16px; /* Tăng từ 14px */
+    line-height: 1.7; /* Tăng line height cho dễ đọc */
+  }
+  
+  /* Tăng font size cho headings */
+  h1 {
+    font-size: 2.5rem; /* Lớn hơn */
+    line-height: 1.3;
+  }
+  
+  h2 {
+    font-size: 2rem; /* Lớn hơn */
+    line-height: 1.35;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.4;
+  }
+  
+  /* Tăng contrast cho text */
+  .text-gray-400 {
+    color: rgb(200 200 200) !important; /* Sáng hơn */
+  }
+  
+  .text-gray-500 {
+    color: rgb(180 180 180) !important; /* Sáng hơn */
+  }
+  
+  /* Button lớn hơn, dễ click */
+  button {
+    min-height: 44px; /* Touch target tốt hơn */
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  /* Input lớn hơn, dễ đọc */
+  input, select {
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+}
+
+/* Custom Date Picker Styles cho người trung niên */
+input[type="date"] {
+  color-scheme: dark;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Copper theme DatePicker */
+.date-picker-wrapper .copper-datepicker {
+  position: relative;
+  width: 100%;
+  height: 3.5rem;
+  padding: 0 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 240, 230, 0.95));
+  border: 2px solid #d4a574;
+  border-radius: 0.75rem;
+  color: #2d2d2d;
+  font-size: 1rem;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.date-picker-wrapper .copper-datepicker:hover {
+  border-color: #b87333;
+  box-shadow: 0 20px 25px -5px rgba(184, 115, 51, 0.1);
+}
+
+.date-picker-wrapper .copper-datepicker:focus {
+  outline: none;
+  border-color: #b87333;
+  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.1);
+}
+
+/* Copper theme inputs for Settings */
+.copper-input {
+  background-color: rgba(250, 240, 230, 0.3);
+  border-color: #d4a574;
+  color: #2d2d2d;
+}
+
+.copper-input:hover {
+  background-color: rgba(250, 240, 230, 0.5);
+}
+
+.copper-input:focus {
+  outline: none;
+  border-color: #b87333;
+  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.1);
+  background-color: rgba(250, 240, 230, 0.5);
+}
+
+.copper-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   SENIOR-FRIENDLY UI - CHO NGƯỜI TRUNG NIÊN
+   - Chữ to (20-28px)
+   - Tương phản cao
+   - Khoảng cách rộng
+   - Nút bấm to (min 56x56px)
+   - Icons rõ ràng
+   ============================================ */
+
+/* Base font size lớn hơn */
+html {
+  font-size: 20px;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 22px;
+  }
+}
+
+/* Text dễ đọc */
+body {
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+/* Headers to và rõ */
+h1 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+h2 {
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+h3 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+/* Touch targets lớn */
+button, a[role="button"] {
+  min-height: 56px !important;
+  min-width: 56px !important;
+  cursor: pointer;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+}
+
+button:active, a[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Links rõ ràng */
+a {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Selection contrast cao */
+::selection {
+  background-color: #b87333;
+  color: white;
+}
+
+/* Input fields lớn hơn */
+input, select, textarea {
+  font-size: 1.1rem !important;
+  min-height: 56px !important;
+  padding: 1rem !important;
+}
+
+/* Labels rõ ràng */
+label {
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+  color: #b87333 !important;
+}
+
+/* Cards có spacing rộng */
+.senior-card {
+  padding: 2rem !important;
+  margin-bottom: 1.5rem !important;
+  border-width: 3px !important;
+  border-radius: 1rem !important;
+}
+
+/* Icons to */
+.senior-icon {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+/* Numbers/Stats to và rõ */
+.senior-stat {
+  font-size: 3rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+/* Spacing giữa elements */
+.senior-spacing > * + * {
+  margin-top: 1.5rem !important;
+}
+
+/* Focus visible cho keyboard navigation */
+*:focus-visible {
+  outline: 4px solid #b87333 !important;
+  outline-offset: 4px !important;
+}
+
+/* Utility classes for seniors */
+.text-senior-lg {
+  font-size: 1.5rem !important;
+  line-height: 1.4 !important;
+}
+
+.text-senior-xl {
+  font-size: 2rem !important;
+  line-height: 1.3 !important;
+}
+
+.text-senior-xxl {
+  font-size: 3rem !important;
+  line-height: 1.1 !important;
+}
+
+/* Button animations */
+@keyframes pulse-gentle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
+
+/* High visibility focus for seniors */
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.3) !important;
+}
+  
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8) sepia(0.5) saturate(3) hue-rotate(100deg);
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  padding: 4px 2px;
+}
+
+/* Style for calendar popup (webkit browsers) */
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(74, 222, 128, 0.1);
+  border-radius: 8px;
+}
+
+/* Firefox date picker */
+input[type="date"]::-moz-calendar-picker-indicator {
+  filter: invert(0.8) sepia(0.5) saturate(3) hue-rotate(100deg);
+  width: 24px;
+  height: 24px;
+}
+
+/* Custom React DatePicker Styles - Senior Friendly */
+.custom-datepicker .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.custom-datepicker .react-datepicker__input-container {
+  width: 100%;
+}
+
+/* Calendar popup styling - Copper & Linen Theme */
+.senior-friendly-calendar {
+  font-size: 16px !important;
+  font-family: inherit !important;
+  background: #ffffff !important;
+  border: 3px solid #b87333 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 50px rgba(184, 115, 51, 0.3) !important;
+  padding: 16px !important;
+  z-index: 99999 !important;
+  position: relative !important;
+}
+
+/* React DatePicker Popper (container) - HIGHEST Z-INDEX */
+.react-datepicker-popper {
+  z-index: 99999 !important;
+  position: fixed !important;
+}
+
+.react-datepicker-popper[data-placement^="bottom"] {
+  margin-top: 8px !important;
+}
+
+.react-datepicker-popper[data-placement^="top"] {
+  margin-bottom: 8px !important;
+}
+
+/* Override any conflicting z-index */
+.react-datepicker__portal {
+  z-index: 99999 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.react-datepicker-wrapper {
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+/* Portal calendar styling */
+.react-datepicker__portal .senior-friendly-calendar {
+  position: relative !important;
+  z-index: 100000 !important;
+}
+
+/* Header (using custom header, hide default) */
+.senior-friendly-calendar .react-datepicker__header {
+  background: transparent !important;
+  border-bottom: 2px solid rgba(184, 115, 51, 0.2) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.senior-friendly-calendar .react-datepicker__current-month {
+  display: none !important;
+}
+
+/* Hide default navigation arrows (using custom ones) */
+.senior-friendly-calendar .react-datepicker__navigation {
+  display: none !important;
+}
+
+/* Day names header */
+.senior-friendly-calendar .react-datepicker__day-names {
+  margin-top: 8px !important;
+  margin-bottom: 4px !important;
+}
+
+.senior-friendly-calendar .react-datepicker__day-name {
+  color: #b87333 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  width: 44px !important;
+  line-height: 44px !important;
+  margin: 2px !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Individual day cells */
+.senior-friendly-calendar .react-datepicker__day {
+  color: #2d2d2d !important;
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  margin: 3px !important;
+  border-radius: 10px !important;
+  transition: all 0.2s !important;
+  background: rgba(250, 240, 230, 0.3) !important;
+}
+
+.senior-friendly-calendar .react-datepicker__day:hover {
+  background: linear-gradient(135deg, #b87333, #d4a574) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+}
+
+/* Selected day */
+.senior-friendly-calendar .react-datepicker__day--selected {
+  background: linear-gradient(135deg, #b87333 0%, #d4a574 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(184, 115, 51, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Today */
+.senior-friendly-calendar .react-datepicker__day--today {
+  border: 2px solid #b87333 !important;
+  font-weight: 600 !important;
+  background: rgba(184, 115, 51, 0.1) !important;
+}
+
+/* Outside month days */
+.senior-friendly-calendar .react-datepicker__day--outside-month {
+  color: #9ca3af !important;
+  opacity: 0.4 !important;
+}
+
+/* Disabled days */
+.senior-friendly-calendar .react-datepicker__day--disabled {
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.senior-friendly-calendar .react-datepicker__day--disabled:hover {
+  background: rgba(250, 240, 230, 0.3) !important;
+  transform: none !important;
+}
+
+/* Month container */
+.senior-friendly-calendar .react-datepicker__month {
+  margin: 8px 0 !important;
+}
+
+/* Footer buttons (Today, Clear) */
+.senior-friendly-calendar .react-datepicker__today-button {
+  background: linear-gradient(135deg, #b87333 0%, #d4a574 100%) !important;
+  color: white !important;
+  border-top: 2px solid #d4a574 !important;
+  padding: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 0 0 12px 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  margin: 8px -16px -16px -16px !important;
+}
+
+.senior-friendly-calendar .react-datepicker__today-button:hover {
+  background: linear-gradient(135deg, #9b5c1f 0%, #b87333 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(184, 115, 51, 0.3) !important;
+}
+
+/* Hide default month/year dropdowns (using custom select in header) */
+.senior-friendly-calendar .react-datepicker__month-dropdown-container,
+.senior-friendly-calendar .react-datepicker__year-dropdown-container {
+  display: none !important;
+}
+
