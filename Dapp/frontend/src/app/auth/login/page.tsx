@@ -56,7 +56,7 @@ export default function LoginPage() {
       console.log('✅ Passkey authenticated:', passkeyResult.credentialId);
 
       // Login with backend
-      const apiResult = await loginPasskey(passkeyResult.credentialId);
+      const apiResult = await loginPasskey(passkeyResult.credentialId || '');
 
       if (!apiResult.success || !apiResult.user) {
         throw new Error(apiResult.error || 'Đăng nhập thất bại');
@@ -75,8 +75,15 @@ export default function LoginPage() {
       });
       storage.set(StorageKeys.AUTH_METHOD, 'passkey');
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Check for callback URL (for Zalo linking)
+      const callbackUrl = localStorage.getItem('login_callback_url');
+      if (callbackUrl) {
+        localStorage.removeItem('login_callback_url');
+        router.push(callbackUrl);
+      } else {
+        // Redirect to dashboard
+        router.push('/dashboard');
+      }
 
     } catch (err: any) {
       console.error('❌ Login error:', err);
@@ -122,8 +129,15 @@ export default function LoginPage() {
       });
       storage.set(StorageKeys.AUTH_METHOD, 'pin');
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Check for callback URL (for Zalo linking)
+      const callbackUrl = localStorage.getItem('login_callback_url');
+      if (callbackUrl) {
+        localStorage.removeItem('login_callback_url');
+        router.push(callbackUrl);
+      } else {
+        // Redirect to dashboard
+        router.push('/dashboard');
+      }
 
     } catch (err: any) {
       console.error('❌ Login error:', err);

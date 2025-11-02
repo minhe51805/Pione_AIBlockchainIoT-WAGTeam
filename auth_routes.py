@@ -647,3 +647,153 @@ def login_pin():
             'error': str(e)
         }), 500
 
+
+# ====== Zalo Account Linking ======
+
+@auth_bp.route('/zalo/link-account', methods=['POST'])
+def link_zalo_account():
+    """
+    Link Zalo ID with user account using verification token
+    
+    This endpoint is called after user:
+    1. Receives Zalo message with linking link (created by n8n)
+    2. Clicks the link and signs in to web
+    3. Confirms on web to complete linking
+    
+    Request body:
+    {
+        "token": "abc123xyz...",  # Token from zalo_link_sessions table
+        "user_id": 1              # Currently logged-in user ID (from auth)
+    }
+    
+    Response:
+    {
+        "success": true,
+        "message": "Tài khoản Zalo đã được liên kết thành công!",
+        "zalo_id": "123456789",
+        "user_id": 1,
+        "full_name": "Nguyen Van A"
+    }
+    """
+    try:
+        data = request.json
+        token = data.get('token')
+        user_id = data.get('user_id')
+        
+        if not token or not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: token, user_id'
+            }), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        try:
+            # 1. Verify token exists and get zalo_id from it
+            cur.execute("""
+                SELECT id, expires_at, is_used, zalo_id
+                FROM zalo_link_sessions
+                WHERE token = %s
+            """, (token,))
+            
+            session_row = cur.fetchone()
+            
+            if not session_row:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': 'Token không hợp lệ hoặc không tồn tại'
+                }), 404
+            
+            session_id, expires_at, is_used, zalo_id = session_row
+            
+            # Check if token already used
+            if is_used:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': 'Token đã được sử dụng rồi'
+                }), 400
+            
+            # Check if token expired (comparing UTC times with timezone)
+            from datetime import datetime as dt, timezone
+            now_utc = dt.now(timezone.utc)
+            if now_utc > expires_at:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': 'Token đã hết hạn (5 phút). Vui lòng yêu cầu liên kết lại.'
+                }), 400
+            
+            # 2. Check if this zalo_chat_id is already linked to another user
+            cur.execute("""
+                SELECT id FROM users WHERE zalo_chat_id = %s AND id != %s
+            """, (zalo_id, user_id))
+            
+            existing = cur.fetchone()
+            if existing:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': 'Zalo ID này đã được liên kết với tài khoản khác'
+                }), 409
+            
+            # 3. Update user with zalo_chat_id
+            cur.execute("""
+                UPDATE users
+                SET zalo_chat_id = %s,
+                    updated_at_vn = NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                WHERE id = %s
+                RETURNING id, full_name, zalo_chat_id
+            """, (zalo_id, user_id))
+            
+            result = cur.fetchone()
+            
+            if not result:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': 'User không tồn tại'
+                }), 404
+            
+            user_id_returned, full_name, zalo_chat_id_linked = result
+            
+            # 4. Mark session token as used and link to user
+            cur.execute("""
+                UPDATE zalo_link_sessions
+                SET is_used = TRUE,
+                    user_id = %s
+                WHERE id = %s
+            """, (user_id, session_id))
+            
+            conn.commit()
+            
+            print(f"✅ Zalo account linked!")
+            print(f"   User: {full_name} (ID: {user_id_returned})")
+            print(f"   Zalo ID: {zalo_chat_id_linked}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Tài khoản Zalo đã được liên kết thành công!',
+                'zalo_id': zalo_chat_id_linked,
+                'user_id': user_id_returned,
+                'full_name': full_name
+            }), 200
+            
+        finally:
+            cur.close()
+            conn.close()
+        
+    except Exception as e:
+        print(f"❌ Link Zalo error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+

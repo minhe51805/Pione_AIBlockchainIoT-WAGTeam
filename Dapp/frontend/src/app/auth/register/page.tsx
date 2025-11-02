@@ -79,19 +79,19 @@ export default function RegisterPage() {
       console.log('✅ Passkey registered:', passkeyResult.credentialId);
 
       // Generate wallet address
-      const walletAddress = generateWalletAddress(passkeyResult.credentialId);
+      const walletAddress = generateWalletAddress(passkeyResult.credentialId || '');
       console.log('💰 Wallet created:', walletAddress);
 
       // Register with backend
       const registerData = {
         full_name: formData.full_name,
         phone: formData.phone,
-        email: formData.email || undefined,
-        farm_name: formData.farm_name || undefined,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
         farm_area_hectares: formData.farm_area_hectares ? parseFloat(formData.farm_area_hectares) : undefined,
         current_crop: formData.current_crop,
-        passkey_credential_id: passkeyResult.credentialId,
-        passkey_public_key: passkeyResult.publicKey,
+        passkey_credential_id: passkeyResult.credentialId || '',
+        passkey_public_key: passkeyResult.publicKey || '',
         wallet_address: walletAddress,
       };
 
@@ -151,8 +151,8 @@ export default function RegisterPage() {
       const registerData = {
         full_name: formData.full_name,
         phone: formData.phone,
-        email: formData.email || undefined,
-        farm_name: formData.farm_name || undefined,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
         farm_area_hectares: formData.farm_area_hectares ? parseFloat(formData.farm_area_hectares) : undefined,
         current_crop: formData.current_crop,
         pin: formData.pin,
