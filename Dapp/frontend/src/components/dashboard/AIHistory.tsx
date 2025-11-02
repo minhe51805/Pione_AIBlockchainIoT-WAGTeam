@@ -52,10 +52,9 @@ export default function AIHistory() {
 
   if (loading) {
     return (
-      <div className="relative mb-6">
-        <div className="absolute -inset-2 rounded-3xl blur-xl" style={{ background: 'linear-gradient(to right, rgba(184, 115, 51, 0.1), rgba(212, 165, 116, 0.1))' }}></div>
-        <div className="relative p-6 bg-white backdrop-blur-xl rounded-2xl border-2 animate-pulse" style={{ borderColor: '#d4a574' }}>
-          <div className="h-64 rounded-xl" style={{ backgroundColor: '#f5e6d3' }}></div>
+      <div className="relative">
+        <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-violet-800 animate-pulse">
+          <div className="h-48 rounded-lg bg-gray-200 dark:bg-violet-900"></div>
         </div>
       </div>
     );
@@ -63,14 +62,12 @@ export default function AIHistory() {
 
   if (error) {
     return (
-      <div className="mb-6">
-        <div className="p-6 border-2 backdrop-blur-xl rounded-2xl" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-          <div className="flex items-center gap-3">
-            <svg className="w-6 h-6" style={{ color: '#dc2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="p-3 border border-red-300 dark:border-red-700 backdrop-blur-xl rounded-lg bg-red-50/80 dark:bg-red-950/80">
+        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p style={{ color: '#dc2626' }}>Error: {error}</p>
-          </div>
+          <span>Error: {error}</span>
         </div>
       </div>
     );
@@ -83,12 +80,14 @@ export default function AIHistory() {
   const chartData = {
     labels: insights.slice().reverse().map(i => i.date),
     datasets: [{
-      label: 'Soil Health Score',
+      label: 'Soil Health',
       data: insights.slice().reverse().map(i => i.soil_health_score),
-      borderColor: '#b87333',
-      backgroundColor: 'rgba(184, 115, 51, 0.1)',
+      borderColor: '#8b5cf6',
+      backgroundColor: 'rgba(139, 92, 246, 0.1)',
       fill: true,
       tension: 0.4,
+      pointRadius: 2,
+      pointHoverRadius: 4,
     }]
   };
 
@@ -99,8 +98,10 @@ export default function AIHistory() {
       legend: {
         position: 'top' as const,
         labels: {
-          color: '#6b4423',
-          font: { size: 12, weight: '600' }
+          color: '#64748b',
+          font: { size: 10, weight: '600' },
+          padding: 10,
+          usePointStyle: true,
         }
       },
     },
@@ -108,12 +109,12 @@ export default function AIHistory() {
       y: {
         min: 0,
         max: 100,
-        grid: { color: '#f5e6d3' },
-        ticks: { color: '#6b4423' }
+        grid: { color: 'rgba(139, 92, 246, 0.1)' },
+        ticks: { color: '#64748b', font: { size: 9 } }
       },
       x: {
-        grid: { color: '#f5e6d3' },
-        ticks: { color: '#6b4423' }
+        grid: { color: 'rgba(139, 92, 246, 0.05)' },
+        ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 45 }
       }
     }
   };
@@ -135,145 +136,124 @@ export default function AIHistory() {
   };
 
   return (
-    <div className="relative mb-6">
-      <div className="absolute -inset-2 rounded-3xl blur-xl" style={{ background: 'linear-gradient(to right, rgba(184, 115, 51, 0.1), rgba(212, 165, 116, 0.1))' }}></div>
-      <div className="relative">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #b87333, #d4a574)' }}>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="relative space-y-4">
+      {/* Header - Compact */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#a855f7]">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
           <div>
-            <h2 className="text-2xl font-bold" style={{ color: '#b87333' }}>AI Analysis History</h2>
-            <p className="text-sm" style={{ color: '#6b4423' }}>Last 30 days insights</p>
+          <h2 className="text-xl font-black text-[#a855f7] dark:text-[#c084fc]">AI History</h2>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">30 days</p>
           </div>
         </div>
 
-        {/* Soil Health Trend Chart */}
+      {/* Chart - Simple */}
         {insights.length > 0 && (
-          <div className="relative mb-6">
-            <div className="absolute -inset-1 rounded-2xl blur" style={{ background: 'linear-gradient(to right, rgba(184, 115, 51, 0.1), rgba(212, 165, 116, 0.1))' }}></div>
-            <div className="relative p-6 bg-white backdrop-blur-xl rounded-2xl border-2" style={{ borderColor: '#d4a574' }}>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 rounded-lg" style={{ background: 'linear-gradient(135deg, #b87333, #d4a574)' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        <div className="p-4 bg-white/70 dark:bg-[#0f0e17]/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-[#2d2640] shadow-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-6 h-6 text-[#a855f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
+            <h3 className="text-base font-bold text-[#a855f7] dark:text-[#c084fc]">Health Trend</h3>
                 </div>
-                <h3 className="text-lg font-semibold" style={{ color: '#b87333' }}>Soil Health Trend</h3>
-              </div>
-              <div style={{ height: '250px' }}>
+          <div style={{ height: '200px' }}>
                 <Line data={chartData} options={chartOptions} />
-              </div>
             </div>
           </div>
         )}
 
-        {/* History Table */}
-        <div className="p-6 bg-white backdrop-blur-xl rounded-2xl border-2" style={{ borderColor: '#d4a574' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h3 className="text-lg font-semibold" style={{ color: '#b87333' }}>Daily Insights</h3>
+      {/* History Cards - Simple */}
+      <div className="p-4 bg-white/70 dark:bg-[#0f0e17]/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-[#2d2640] shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-base font-bold text-[#a855f7] dark:text-[#c084fc]">Insights</h3>
             
             <div className="flex gap-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                   filter === 'all'
-                    ? 'text-white shadow-lg'
-                    : 'hover:shadow-md'
+                  ? 'text-white bg-[#a855f7]'
+                  : 'bg-purple-100 dark:bg-purple-950/50 text-[#a855f7]'
                 }`}
-                style={filter === 'all' 
-                  ? { background: 'linear-gradient(to right, #b87333, #d4a574)' }
-                  : { backgroundColor: 'rgba(184, 115, 51, 0.1)', color: '#6b4423' }
-                }
               >
-                All ({insights.length})
+              All {insights.length}
               </button>
               <button
                 onClick={() => setFilter('anomaly')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                   filter === 'anomaly'
-                    ? 'text-white shadow-lg'
-                    : 'hover:shadow-md'
+                  ? 'text-white bg-red-600'
+                  : 'bg-red-100 dark:bg-red-950/50 text-red-600'
                 }`}
-                style={filter === 'anomaly'
-                  ? { background: 'linear-gradient(to right, #ef4444, #f97316)' }
-                  : { backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626' }
-                }
               >
-                Anomalies ({insights.filter(i => i.is_anomaly_detected).length})
+              ⚠ {insights.filter(i => i.is_anomaly_detected).length}
               </button>
             </div>
           </div>
 
           {filteredInsights.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#f5e6d3' }}>
-                <svg className="w-8 h-8" style={{ color: '#9b7653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            <svg className="w-16 h-16 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-              </div>
-              <p style={{ color: '#6b4423' }}>No insights found</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500">No data</p>
             </div>
           ) : (
-            <div className="space-y-3">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredInsights.map((insight) => {
                 const healthStyle = getHealthColor(insight.soil_health_score);
                 const ratingStyle = getRatingStyle(insight.health_rating);
                 
                 return (
-                  <div key={insight.id} className="group relative">
-                    <div className="absolute -inset-0.5 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity" style={{ background: healthStyle.bg }}></div>
-                    <div className="relative p-5 backdrop-blur-sm rounded-xl border-2 hover:shadow-lg transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderColor: '#d4a574' }}>
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div key={insight.id} className="p-3 rounded-xl border border-gray-200 dark:border-[#2d2640] bg-white/80 dark:bg-[#1a1625]/80 hover:shadow-md transition-all">
+                  <div className="grid grid-cols-5 gap-3 text-xs">
                         {/* Date */}
                         <div>
-                          <p className="text-xs mb-1" style={{ color: '#9b7653' }}>Date</p>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" style={{ color: '#b87333' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="font-medium" style={{ color: '#2d2d2d' }}>{insight.date}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-1">Date</p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">📅</span>
+                        <p className="font-semibold text-slate-700 dark:text-slate-300">{insight.date.substring(5)}</p>
                           </div>
                         </div>
 
                         {/* Crop */}
                         <div>
-                          <p className="text-xs mb-1" style={{ color: '#9b7653' }}>Recommended Crop</p>
-                          <p className="font-semibold capitalize" style={{ color: '#10b981' }}>{insight.recommended_crop}</p>
-                          <p className="text-xs" style={{ color: '#6b4423' }}>{(insight.confidence * 100).toFixed(0)}% confidence</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-1">Crop</p>
+                      <p className="font-bold capitalize text-emerald-600 dark:text-emerald-400">{insight.recommended_crop}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500">{(insight.confidence * 100).toFixed(0)}%</p>
                         </div>
 
-                        {/* Health Score */}
+                    {/* Health */}
                         <div>
-                          <p className="text-xs mb-1" style={{ color: '#9b7653' }}>Soil Health</p>
-                          <p className="text-2xl font-bold" style={{ color: healthStyle.text }}>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-1">Health</p>
+                      <p className="text-xl font-black" style={{ color: healthStyle.text }}>
                             {insight.soil_health_score.toFixed(0)}
                           </p>
-                          <span className="inline-block px-2 py-1 rounded-lg text-xs font-medium" style={{ backgroundColor: ratingStyle.bg, color: ratingStyle.text }}>
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold" style={{ backgroundColor: ratingStyle.bg, color: ratingStyle.text }}>
                             {insight.health_rating}
                           </span>
                         </div>
 
                         {/* Anomaly */}
                         <div>
-                          <p className="text-xs mb-1" style={{ color: '#9b7653' }}>Anomaly</p>
-                          <div className="flex items-center gap-2">
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-1">Anomaly</p>
+                      <div className="flex items-center gap-1">
                             {insight.is_anomaly_detected ? (
                               <>
-                                <svg className="w-5 h-5" style={{ color: '#ef4444' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
-                                <span className="font-medium" style={{ color: '#ef4444' }}>Detected</span>
+                            <span className="font-bold text-red-600 dark:text-red-400">Yes</span>
                               </>
                             ) : (
                               <>
-                                <svg className="w-5 h-5" style={{ color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="font-medium" style={{ color: '#10b981' }}>Clear</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">No</span>
                               </>
                             )}
                           </div>
@@ -281,21 +261,21 @@ export default function AIHistory() {
 
                         {/* Blockchain */}
                         <div>
-                          <p className="text-xs mb-1" style={{ color: '#9b7653' }}>Blockchain</p>
-                          <div className="flex items-center gap-2">
+                      <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-1">Chain</p>
+                      <div className="flex items-center gap-1">
                             {insight.blockchain_status === 'confirmed' ? (
                               <>
-                                <svg className="w-5 h-5" style={{ color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                 </svg>
-                                <span className="font-medium" style={{ color: '#10b981' }}>Verified</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">OK</span>
                               </>
                             ) : (
                               <>
-                                <svg className="w-5 h-5 animate-spin" style={{ color: '#eab308' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <svg className="w-4 h-4 text-amber-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="font-medium" style={{ color: '#eab308' }}>Pending</span>
+                            <span className="font-bold text-amber-600 dark:text-amber-400">...</span>
                               </>
                             )}
                           </div>
@@ -304,13 +284,11 @@ export default function AIHistory() {
                               href={`https://zeroscan.org/tx/${insight.blockchain_tx_hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs underline decoration-dotted block mt-1 hover:opacity-80"
-                              style={{ color: '#b87333' }}
+                          className="text-[10px] underline text-violet-600 dark:text-violet-400 hover:opacity-80"
                             >
-                              View TX
+                          View
                             </a>
                           )}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -318,7 +296,6 @@ export default function AIHistory() {
               })}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

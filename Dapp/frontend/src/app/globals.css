@@ -1,6 +1,39 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Smooth Scroll Behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar for Better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.6);
+}
 
 /* Custom Animations for Unique UI */
 @keyframes shrink {
@@ -45,6 +78,17 @@
   }
 }
 
+@keyframes scale-in {
+  from { 
+    transform: scale(0.95); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
 @keyframes slide-in {
   from { 
     transform: translateX(100%); 
@@ -59,11 +103,42 @@
 @keyframes pulse-glow {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
   50% {
     opacity: 0.8;
-    box-shadow: 0 0 30px rgba(52, 211, 153, 0.6);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -78,32 +153,54 @@
 
 @layer base {
   :root {
-    /* Copper & Linen Theme */
-    --background: 30 67% 94%;      /* #faf0e6 linen */
-    --foreground: 0 0% 18%;         /* #2d2d2d dark gray */
+    /* Purple Financial Dashboard Theme - Inspired by Modern Finance UI */
+    --background: 270 100% 99%;     /* #faf5ff very light purple */
+    --foreground: 240 10% 10%;      /* #1a1a1f near black */
     --card: 0 0% 100%;              /* #ffffff white */
-    --card-foreground: 0 0% 18%;    /* #2d2d2d */
+    --card-foreground: 240 10% 10%; /* #1a1a1f */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 18%;
-    --primary: 25 65% 46%;          /* #b87333 copper */
-    --primary-foreground: 0 0% 100%;/* white text on copper */
-    --secondary: 30 67% 94%;        /* linen */
-    --secondary-foreground: 0 0% 18%;
-    --muted: 30 40% 88%;            /* lighter beige */
-    --muted-foreground: 25 30% 35%; /* dark brown */
-    --accent: 25 65% 46%;           /* copper */
+    --popover-foreground: 240 10% 10%;
+    --primary: 262 83% 58%;         /* #a855f7 violet-500 */
+    --primary-foreground: 0 0% 100%;/* white text */
+    --secondary: 270 91% 65%;       /* #c084fc purple-400 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 270 20% 96%;           /* #faf5ff purple-50 */
+    --muted-foreground: 240 5% 46%; /* #64748b slate-600 */
+    --accent: 280 85% 60%;          /* #d946ef fuchsia-500 */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 25 40% 75%;           /* light copper */
-    --input: 30 40% 88%;
-    --ring: 25 65% 46%;             /* copper */
-    --chart-1: 25 65% 46%;          /* copper */
-    --chart-2: 25 50% 38%;          /* darker copper */
-    --chart-3: 30 67% 94%;          /* linen */
-    --chart-4: 30 50% 80%;          /* tan */
-    --chart-5: 25 40% 60%;          /* light copper */
-    --radius: 0.5rem;
+    --destructive: 0 84% 60%;       /* #ef4444 red-500 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 30% 91%;          /* #e9d5ff purple-200 */
+    --input: 270 30% 91%;
+    --ring: 262 83% 58%;            /* violet-500 */
+    --chart-1: 262 83% 58%;         /* violet-500 */
+    --chart-2: 270 91% 65%;         /* purple-400 */
+    --chart-3: 280 85% 60%;         /* fuchsia-500 */
+    --chart-4: 292 84% 61%;         /* pink-500 */
+    --chart-5: 250 95% 63%;         /* indigo-500 */
+    --radius: 1rem;
+  }
+  
+  .dark {
+    --background: 240 10% 8%;       /* #14141f dark purple-black */
+    --foreground: 0 0% 98%;         /* #fafafa */
+    --card: 240 10% 12%;            /* #1c1c28 dark card */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 262 83% 58%;         /* #a855f7 violet-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 91% 65%;       /* #c084fc purple-400 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 20%;
+    --muted-foreground: 240 5% 70%;
+    --accent: 280 85% 60%;          /* #d946ef fuchsia-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 262 83% 58%;
   }
 }
 
@@ -136,13 +233,17 @@
     line-height: 1.4;
   }
   
-  /* Tăng contrast cho text */
+  /* Modern text colors with better contrast */
   .text-gray-400 {
-    color: rgb(200 200 200) !important; /* Sáng hơn */
+    color: rgb(156 163 175) !important; /* Slate-400 */
   }
   
   .text-gray-500 {
-    color: rgb(180 180 180) !important; /* Sáng hơn */
+    color: rgb(100 116 139) !important; /* Slate-600 */
+  }
+  
+  .text-gray-600 {
+    color: rgb(71 85 105) !important; /* Slate-700 */
   }
   
   /* Button lớn hơn, dễ click */
@@ -166,55 +267,59 @@ input[type="date"] {
   position: relative;
 }
 
-/* Copper theme DatePicker */
-.date-picker-wrapper .copper-datepicker {
+/* Modern DatePicker - Emerald Green Theme */
+.date-picker-wrapper .modern-datepicker {
   position: relative;
   width: 100%;
   height: 3.5rem;
   padding: 0 1.25rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 240, 230, 0.95));
-  border: 2px solid #d4a574;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.95));
+  border: 2px solid rgb(167, 243, 208);
   border-radius: 0.75rem;
-  color: #2d2d2d;
+  color: rgb(26, 26, 31);
   font-size: 1rem;
   font-weight: 500;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1);
   transition: all 0.3s;
   cursor: pointer;
 }
 
-.date-picker-wrapper .copper-datepicker:hover {
-  border-color: #b87333;
-  box-shadow: 0 20px 25px -5px rgba(184, 115, 51, 0.1);
+.date-picker-wrapper .modern-datepicker:hover {
+  border-color: rgb(16, 185, 129);
+  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15);
+  transform: translateY(-1px);
 }
 
-.date-picker-wrapper .copper-datepicker:focus {
+.date-picker-wrapper .modern-datepicker:focus {
   outline: none;
-  border-color: #b87333;
-  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.1);
+  border-color: rgb(16, 185, 129);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
-/* Copper theme inputs for Settings */
-.copper-input {
-  background-color: rgba(250, 240, 230, 0.3);
-  border-color: #d4a574;
-  color: #2d2d2d;
+/* Modern inputs for Settings - Emerald Theme */
+.modern-input {
+  background-color: rgba(240, 253, 244, 0.3);
+  border-color: rgb(167, 243, 208);
+  color: rgb(26, 26, 31);
+  transition: all 0.2s;
 }
 
-.copper-input:hover {
-  background-color: rgba(250, 240, 230, 0.5);
+.modern-input:hover {
+  background-color: rgba(240, 253, 244, 0.5);
+  border-color: rgb(16, 185, 129);
 }
 
-.copper-input:focus {
+.modern-input:focus {
   outline: none;
-  border-color: #b87333;
-  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.1);
-  background-color: rgba(250, 240, 230, 0.5);
+  border-color: rgb(16, 185, 129);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  background-color: rgba(240, 253, 244, 0.5);
 }
 
-.copper-input:disabled {
+.modern-input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  background-color: rgb(241, 245, 249);
 }
 
 /* ============================================
@@ -284,7 +389,7 @@ a {
 
 /* Selection contrast cao */
 ::selection {
-  background-color: #b87333;
+  background-color: rgb(16, 185, 129); /* emerald-500 */
   color: white;
 }
 
@@ -300,7 +405,7 @@ label {
   font-size: 1.15rem !important;
   font-weight: 600 !important;
   margin-bottom: 0.75rem !important;
-  color: #b87333 !important;
+  color: rgb(5, 150, 105) !important; /* emerald-600 */
 }
 
 /* Cards có spacing rộng */
@@ -333,7 +438,7 @@ label {
 
 /* Focus visible cho keyboard navigation */
 *:focus-visible {
-  outline: 4px solid #b87333 !important;
+  outline: 4px solid rgb(16, 185, 129) !important; /* emerald-500 */
   outline-offset: 4px !important;
 }
 
@@ -373,7 +478,7 @@ a:focus,
 input:focus,
 select:focus,
 textarea:focus {
-  box-shadow: 0 0 0 4px rgba(184, 115, 51, 0.3) !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25) !important;
 }
   
 input[type="date"]::-webkit-calendar-picker-indicator {
@@ -416,14 +521,14 @@ input[type="date"]::-moz-calendar-picker-indicator {
   width: 100%;
 }
 
-/* Calendar popup styling - Copper & Linen Theme */
+/* Calendar popup styling - Modern Emerald Theme */
 .senior-friendly-calendar {
   font-size: 16px !important;
   font-family: inherit !important;
   background: #ffffff !important;
-  border: 3px solid #b87333 !important;
+  border: 3px solid rgb(16, 185, 129) !important;
   border-radius: 16px !important;
-  box-shadow: 0 20px 50px rgba(184, 115, 51, 0.3) !important;
+  box-shadow: 0 20px 50px rgba(16, 185, 129, 0.25) !important;
   padding: 16px !important;
   z-index: 99999 !important;
   position: relative !important;
@@ -471,7 +576,7 @@ input[type="date"]::-moz-calendar-picker-indicator {
 /* Header (using custom header, hide default) */
 .senior-friendly-calendar .react-datepicker__header {
   background: transparent !important;
-  border-bottom: 2px solid rgba(184, 115, 51, 0.2) !important;
+  border-bottom: 2px solid rgba(16, 185, 129, 0.2) !important;
   border-radius: 0 !important;
   padding: 0 !important;
 }
@@ -492,7 +597,7 @@ input[type="date"]::-moz-calendar-picker-indicator {
 }
 
 .senior-friendly-calendar .react-datepicker__day-name {
-  color: #b87333 !important;
+  color: rgb(5, 150, 105) !important; /* emerald-600 */
   font-size: 15px !important;
   font-weight: 600 !important;
   width: 44px !important;
@@ -503,7 +608,7 @@ input[type="date"]::-moz-calendar-picker-indicator {
 
 /* Individual day cells */
 .senior-friendly-calendar .react-datepicker__day {
-  color: #2d2d2d !important;
+  color: rgb(26, 26, 31) !important;
   font-size: 17px !important;
   font-weight: 500 !important;
   width: 44px !important;
@@ -512,46 +617,46 @@ input[type="date"]::-moz-calendar-picker-indicator {
   margin: 3px !important;
   border-radius: 10px !important;
   transition: all 0.2s !important;
-  background: rgba(250, 240, 230, 0.3) !important;
+  background: rgba(240, 253, 244, 0.3) !important;
 }
 
 .senior-friendly-calendar .react-datepicker__day:hover {
-  background: linear-gradient(135deg, #b87333, #d4a574) !important;
+  background: linear-gradient(135deg, rgb(16, 185, 129), rgb(5, 150, 105)) !important;
   color: white !important;
   transform: scale(1.1) !important;
 }
 
 /* Selected day */
 .senior-friendly-calendar .react-datepicker__day--selected {
-  background: linear-gradient(135deg, #b87333 0%, #d4a574 100%) !important;
+  background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%) !important;
   color: white !important;
   font-weight: 700 !important;
-  box-shadow: 0 4px 12px rgba(184, 115, 51, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
   transform: scale(1.05) !important;
 }
 
 /* Today */
 .senior-friendly-calendar .react-datepicker__day--today {
-  border: 2px solid #b87333 !important;
+  border: 2px solid rgb(16, 185, 129) !important;
   font-weight: 600 !important;
-  background: rgba(184, 115, 51, 0.1) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
 }
 
 /* Outside month days */
 .senior-friendly-calendar .react-datepicker__day--outside-month {
-  color: #9ca3af !important;
+  color: rgb(156, 163, 175) !important; /* slate-400 */
   opacity: 0.4 !important;
 }
 
 /* Disabled days */
 .senior-friendly-calendar .react-datepicker__day--disabled {
-  color: #9ca3af !important;
+  color: rgb(156, 163, 175) !important; /* slate-400 */
   cursor: not-allowed !important;
   opacity: 0.5 !important;
 }
 
 .senior-friendly-calendar .react-datepicker__day--disabled:hover {
-  background: rgba(250, 240, 230, 0.3) !important;
+  background: rgba(240, 253, 244, 0.3) !important;
   transform: none !important;
 }
 
@@ -562,9 +667,9 @@ input[type="date"]::-moz-calendar-picker-indicator {
 
 /* Footer buttons (Today, Clear) */
 .senior-friendly-calendar .react-datepicker__today-button {
-  background: linear-gradient(135deg, #b87333 0%, #d4a574 100%) !important;
+  background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%) !important;
   color: white !important;
-  border-top: 2px solid #d4a574 !important;
+  border-top: 2px solid rgb(167, 243, 208) !important;
   padding: 12px !important;
   font-size: 16px !important;
   font-weight: 600 !important;
@@ -575,9 +680,9 @@ input[type="date"]::-moz-calendar-picker-indicator {
 }
 
 .senior-friendly-calendar .react-datepicker__today-button:hover {
-  background: linear-gradient(135deg, #9b5c1f 0%, #b87333 100%) !important;
+  background: linear-gradient(135deg, rgb(5, 150, 105) 0%, rgb(4, 120, 87) 100%) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(184, 115, 51, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* Hide default month/year dropdowns (using custom select in header) */

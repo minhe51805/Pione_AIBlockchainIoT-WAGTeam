@@ -55,7 +55,7 @@ echo.
 echo ============================================================
 echo 📍 THÔNG TIN TRUY CẬP:
 echo ============================================================
-echo   🌐 Frontend:          http://localhost:3000
+echo   🌐 Frontend:          http://localhost:3001
 echo   🤖 AI API:            http://localhost:5000
 echo   📥 Data Ingest:       Xem cửa sổ "PIONE - Data Ingest"
 echo   ⛓️  Blockchain Bridge: Xem cửa sổ "PIONE - Blockchain Bridge"
@@ -66,7 +66,7 @@ echo 💡 MỖI SERVICE CHẠY TRONG CỬA SỔ RIÊNG
 echo 💡 ĐỢI 10-20 GIÂY ĐỂ TẤT CẢ KHỞI ĐỘNG XONG
 echo 💡 ĐỂ DỪNG: ĐÓNG CÁC CỬA SỔ CMD
 echo.
-echo Mở trình duyệt và vào: http://localhost:3000
+echo Mở trình duyệt và vào: http://localhost:3001
 echo.
 
 pause
