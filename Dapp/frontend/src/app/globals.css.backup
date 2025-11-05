@@ -1,41 +1,6 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Smooth Scroll Behavior */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Custom Scrollbar for Better UX */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.5);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.4);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.6);
-}
-
-/* Custom Animations for Unique UI */
 @keyframes shrink {
   from {
     transform: scaleX(1);
@@ -75,17 +40,6 @@ html {
   }
   50% { 
     transform: translateY(-10px); 
-  }
-}
-
-@keyframes scale-in {
-  from { 
-    transform: scale(0.95); 
-    opacity: 0; 
-  }
-  to { 
-    transform: scale(1); 
-    opacity: 1; 
   }
 }
 
@@ -154,47 +108,47 @@ html {
 @layer base {
   :root {
     /* Purple Financial Dashboard Theme - Inspired by Modern Finance UI */
-    --background: 270 100% 99%;     /* #faf5ff very light purple */
-    --foreground: 240 10% 10%;      /* #1a1a1f near black */
-    --card: 0 0% 100%;              /* #ffffff white */
-    --card-foreground: 240 10% 10%; /* #1a1a1f */
+    --background: 270 100% 99%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
-    --primary: 262 83% 58%;         /* #a855f7 violet-500 */
-    --primary-foreground: 0 0% 100%;/* white text */
-    --secondary: 270 91% 65%;       /* #c084fc purple-400 */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 91% 65%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 270 20% 96%;           /* #faf5ff purple-50 */
-    --muted-foreground: 240 5% 46%; /* #64748b slate-600 */
-    --accent: 280 85% 60%;          /* #d946ef fuchsia-500 */
+    --muted: 270 20% 96%;
+    --muted-foreground: 240 5% 46%;
+    --accent: 280 85% 60%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;       /* #ef4444 red-500 */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 270 30% 91%;          /* #e9d5ff purple-200 */
+    --border: 270 30% 91%;
     --input: 270 30% 91%;
-    --ring: 262 83% 58%;            /* violet-500 */
-    --chart-1: 262 83% 58%;         /* violet-500 */
-    --chart-2: 270 91% 65%;         /* purple-400 */
-    --chart-3: 280 85% 60%;         /* fuchsia-500 */
-    --chart-4: 292 84% 61%;         /* pink-500 */
-    --chart-5: 250 95% 63%;         /* indigo-500 */
+    --ring: 262 83% 58%;
+    --chart-1: 262 83% 58%;
+    --chart-2: 270 91% 65%;
+    --chart-3: 280 85% 60%;
+    --chart-4: 292 84% 61%;
+    --chart-5: 250 95% 63%;
     --radius: 1rem;
   }
   
   .dark {
-    --background: 240 10% 8%;       /* #14141f dark purple-black */
-    --foreground: 0 0% 98%;         /* #fafafa */
-    --card: 240 10% 12%;            /* #1c1c28 dark card */
+    --background: 240 10% 8%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 12%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 12%;
     --popover-foreground: 0 0% 98%;
-    --primary: 262 83% 58%;         /* #a855f7 violet-500 */
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 270 91% 65%;       /* #c084fc purple-400 */
+    --secondary: 270 91% 65%;
     --secondary-foreground: 0 0% 100%;
     --muted: 240 5% 20%;
     --muted-foreground: 240 5% 70%;
-    --accent: 280 85% 60%;          /* #d946ef fuchsia-500 */
+    --accent: 280 85% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -213,18 +167,18 @@ html {
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-size: 16px; /* Tăng từ 14px */
-    line-height: 1.7; /* Tăng line height cho dễ đọc */
+    font-size: 16px;
+    line-height: 1.7;
   }
   
   /* Tăng font size cho headings */
   h1 {
-    font-size: 2.5rem; /* Lớn hơn */
+    font-size: 2.5rem;
     line-height: 1.3;
   }
   
   h2 {
-    font-size: 2rem; /* Lớn hơn */
+    font-size: 2rem;
     line-height: 1.35;
   }
   
@@ -235,20 +189,20 @@ html {
   
   /* Modern text colors with better contrast */
   .text-gray-400 {
-    color: rgb(156 163 175) !important; /* Slate-400 */
+    color: rgb(156 163 175) !important;
   }
   
   .text-gray-500 {
-    color: rgb(100 116 139) !important; /* Slate-600 */
+    color: rgb(100 116 139) !important;
   }
   
   .text-gray-600 {
-    color: rgb(71 85 105) !important; /* Slate-700 */
+    color: rgb(71 85 105) !important;
   }
   
   /* Button lớn hơn, dễ click */
   button {
-    min-height: 44px; /* Touch target tốt hơn */
+    min-height: 44px;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
@@ -389,7 +343,7 @@ a {
 
 /* Selection contrast cao */
 ::selection {
-  background-color: rgb(16, 185, 129); /* emerald-500 */
+  background-color: rgb(16, 185, 129);
   color: white;
 }
 
@@ -405,7 +359,7 @@ label {
   font-size: 1.15rem !important;
   font-weight: 600 !important;
   margin-bottom: 0.75rem !important;
-  color: rgb(5, 150, 105) !important; /* emerald-600 */
+  color: rgb(5, 150, 105) !important;
 }
 
 /* Cards có spacing rộng */
@@ -438,7 +392,7 @@ label {
 
 /* Focus visible cho keyboard navigation */
 *:focus-visible {
-  outline: 4px solid rgb(16, 185, 129) !important; /* emerald-500 */
+  outline: 4px solid rgb(16, 185, 129) !important;
   outline-offset: 4px !important;
 }
 
@@ -597,7 +551,7 @@ input[type="date"]::-moz-calendar-picker-indicator {
 }
 
 .senior-friendly-calendar .react-datepicker__day-name {
-  color: rgb(5, 150, 105) !important; /* emerald-600 */
+  color: rgb(5, 150, 105) !important;
   font-size: 15px !important;
   font-weight: 600 !important;
   width: 44px !important;
@@ -635,6 +589,18 @@ input[type="date"]::-moz-calendar-picker-indicator {
   transform: scale(1.05) !important;
 }
 
+.senior-friendly-calendar .react-datepicker__day--selected:hover {
+  background: linear-gradient(135deg, rgb(5, 150, 105) 0%, rgb(4, 120, 87) 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Hide default month/year dropdowns (using custom select in header) */
+.senior-friendly-calendar .react-datepicker__month-dropdown-container,
+.senior-friendly-calendar .react-datepicker__year-dropdown-container {
+  display: none !important;
+}
+
 /* Today */
 .senior-friendly-calendar .react-datepicker__day--today {
   border: 2px solid rgb(16, 185, 129) !important;
@@ -644,23 +610,18 @@ input[type="date"]::-moz-calendar-picker-indicator {
 
 /* Outside month days */
 .senior-friendly-calendar .react-datepicker__day--outside-month {
-  color: rgb(156, 163, 175) !important; /* slate-400 */
+  color: rgb(156, 163, 175) !important;
   opacity: 0.4 !important;
 }
 
 /* Disabled days */
 .senior-friendly-calendar .react-datepicker__day--disabled {
-  color: rgb(156, 163, 175) !important; /* slate-400 */
+  color: rgb(156, 163, 175) !important;
   cursor: not-allowed !important;
   opacity: 0.5 !important;
 }
 
-.senior-friendly-calendar .react-datepicker__day--disabled:hover {
-  background: rgba(240, 253, 244, 0.3) !important;
-  transform: none !important;
-}
-
-/* Month container */
+/* Month view */
 .senior-friendly-calendar .react-datepicker__month {
   margin: 8px 0 !important;
 }
@@ -683,11 +644,5 @@ input[type="date"]::-moz-calendar-picker-indicator {
   background: linear-gradient(135deg, rgb(5, 150, 105) 0%, rgb(4, 120, 87) 100%) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
-}
-
-/* Hide default month/year dropdowns (using custom select in header) */
-.senior-friendly-calendar .react-datepicker__month-dropdown-container,
-.senior-friendly-calendar .react-datepicker__year-dropdown-container {
-  display: none !important;
 }
 

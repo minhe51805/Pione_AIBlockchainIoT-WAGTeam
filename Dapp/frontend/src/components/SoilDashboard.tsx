@@ -187,7 +187,7 @@ export default function SoilDashboard() {
                 disabled={loading}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {loading ? '⏳ Processing...' : '🚀 Trigger Pipeline'}
+                {loading ? '⏳ Processing...' : '🚀 Analyze Daily'}
               </Button>
             </div>
           </div>
