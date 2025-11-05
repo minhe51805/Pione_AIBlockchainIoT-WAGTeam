@@ -535,7 +535,7 @@ export default function SettingsPage() {
                       </a>
 
                       <a
-                        href="https://zalo.me/YOUR_ID"
+                        href="https://zalo.me/1259373795369698660"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block group"

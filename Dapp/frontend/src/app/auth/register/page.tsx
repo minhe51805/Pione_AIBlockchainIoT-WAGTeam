@@ -77,6 +77,10 @@ export default function RegisterPage() {
         throw new Error(passkeyResult.error || 'Passkey registration failed');
       }
 
+      console.log('✅ Passkey registered:', passkeyResult.credentialId);
+
+      // Generate wallet address
+      const walletAddress = generateWalletAddress(passkeyResult.credentialId || '');
       // Create wallet address from passkey credential ID
       const walletAddress = generateWalletAddress(passkeyResult.credentialId!);
       console.log('💰 Wallet created:', walletAddress);
@@ -87,6 +91,30 @@ export default function RegisterPage() {
       const userData = await registerUser({
         full_name: formData.full_name,
         phone: formData.phone,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
+        farm_area_hectares: formData.farm_area_hectares ? parseFloat(formData.farm_area_hectares) : undefined,
+        current_crop: formData.current_crop,
+        passkey_credential_id: passkeyResult.credentialId || '',
+        passkey_public_key: passkeyResult.publicKey || '',
+        wallet_address: walletAddress,
+      };
+
+      const apiResult = await registerPasskey(registerData);
+
+      if (!apiResult.success) {
+        throw new Error(apiResult.error || 'Đăng ký thất bại');
+      }
+
+      console.log('✅ User registered in database:', apiResult.user_id);
+
+      // Save user info to localStorage
+      storage.set(StorageKeys.USER, {
+        id: apiResult.user_id,
+        full_name: formData.full_name,
+        wallet_address: apiResult.wallet_address || walletAddress,
+        phone: formData.phone,
+        farm_name: formData.farm_name,
         email: formData.email || undefined,
         farm_name: formData.farm_name || undefined,
         farm_area_hectares: farmAreaValue,
@@ -154,6 +182,10 @@ export default function RegisterPage() {
       // Register user
       const userData = await registerUserPIN({
         full_name: formData.full_name,
+        phone: formData.phone,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
+        farm_area_hectares: formData.farm_area_hectares ? parseFloat(formData.farm_area_hectares) : undefined,
         phone: formData.phone || undefined,
         email: formData.email || '',
         farm_name: formData.farm_name || undefined,
