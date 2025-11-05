@@ -1,0 +1,25 @@
+{
+  "name": "soil-chain",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "hardhat": "^2.26.3"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "ethers": "^6.13.0",
+    "express": "^5.1.0",
+    "pg": "^8.12.0",
+    "react-chartjs-2": "^5.3.1"
+  }
+}
