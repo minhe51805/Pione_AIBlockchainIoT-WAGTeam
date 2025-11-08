@@ -42,7 +42,7 @@ interface TrendPoint {
   potassium: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_FLASK_API || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_FLASK_API || '';
 
 interface RealtimeIoTProps {
   onMetricClick?: (name: string, value: number | string) => void;
@@ -156,7 +156,7 @@ export default function RealtimeIoT({ onMetricClick }: RealtimeIoTProps = {}) {
         position: 'top' as const,
         labels: {
           color: '#64748b',
-          font: { size: 10, weight: '600' },
+          font: { size: 10, weight: 'bold' as const },
           padding: 10,
           usePointStyle: true,
         }

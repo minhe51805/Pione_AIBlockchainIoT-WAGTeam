@@ -18,7 +18,7 @@ interface DailyInsight {
   sample_count: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_FLASK_API || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_FLASK_API || '';
 
 export default function AIHistory() {
   const [insights, setInsights] = useState<DailyInsight[]>([]);

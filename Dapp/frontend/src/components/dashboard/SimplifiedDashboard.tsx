@@ -23,7 +23,7 @@ interface SimplifiedDashboardProps {
   onSwitchToAdvanced?: () => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_FLASK_API || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_FLASK_API || '';
 
 export default function SimplifiedDashboard({ user, onSwitchToAdvanced }: SimplifiedDashboardProps) {
   const router = useRouter();

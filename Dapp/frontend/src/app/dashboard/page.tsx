@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import AIChatModal from '@/components/AIChatModal';
 import CropManagement from '@/components/CropManagement';
+import Toast from '@/components/Toast';
 
 interface UserInfo {
   id: number;
@@ -49,6 +50,24 @@ export default function DashboardPage() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   
+  // Toast State
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  
+  // Latest IoT Data State (for AI analysis)
+  const [latestIoTData, setLatestIoTData] = useState({
+    temperature: 0,
+    moisture: 0,
+    pH: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    humidity: 0,
+    airTemp: 0,
+    salt: 0
+  });
+  
   // Crop Management State
   const [cropData, setCropData] = useState<{ cropName: string; plantedDate: string; harvestDate?: string; daysPlanted?: number } | null>(null);
 
@@ -76,6 +95,40 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  // Fetch latest IoT data for AI analysis
+  useEffect(() => {
+    const fetchLatestData = async () => {
+      try {
+        const response = await fetch('/api/latest');
+        if (response.ok) {
+          const data = await response.json();
+          // Backend returns data directly, not wrapped in data.data
+          if (data && data.soil_temperature !== undefined) {
+            setLatestIoTData({
+              temperature: data.soil_temperature || 0,
+              moisture: data.soil_moisture || 0,
+              pH: data.ph || 0,
+              nitrogen: data.nitrogen || 0,
+              phosphorus: data.phosphorus || 0,
+              potassium: data.potassium || 0,
+              humidity: data.air_humidity || 0,
+              airTemp: data.air_temperature || 0,
+              salt: data.salt || 0
+            });
+            console.log('✅ Updated IoT data:', data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest IoT data:', error);
+      }
+    };
+
+    fetchLatestData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchLatestData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('aquamind_user');
     localStorage.removeItem('aquamind_auth_method');
@@ -98,17 +151,8 @@ export default function DashboardPage() {
     try {
       const { chatWithExpert } = await import('@/services/geminiService');
       
-      const iotData = {
-        temperature: 27.6,
-        moisture: 45.2,
-        pH: 6.5,
-        nitrogen: 2,
-        phosphorus: 0,
-        potassium: 0,
-        humidity: 98,
-        salt: 3,
-        airTemp: 27.6
-      };
+      // Use real-time IoT data from database
+      const iotData = latestIoTData;
 
       // Build chat history
       const history = chatMessages.map(msg => ({
@@ -344,7 +388,16 @@ export default function DashboardPage() {
 
                 {/* Right: Date Selector - Takes 1 column */}
                 <div className="lg:col-span-1">
-                  <DateSelector />
+                  <DateSelector 
+                    onAnalysisComplete={(analysisData) => {
+                      // Open chatbot with analysis summary
+                      setSelectedMetric({
+                        name: `Daily Analysis: ${analysisData.crop}`,
+                        value: `Health: ${analysisData.health}/100, Anomaly: ${analysisData.anomaly ? 'Yes' : 'No'}`
+                      });
+                      setAiModalOpen(true);
+                    }}
+                  />
                 </div>
               </div>
 
@@ -373,17 +426,7 @@ export default function DashboardPage() {
             }}
             metricName={selectedMetric.name}
             metricValue={selectedMetric.value}
-            iotData={{
-              temperature: 27.6,
-              moisture: 45.2,
-              pH: 6.5,
-              nitrogen: 2,
-              phosphorus: 0,
-              potassium: 0,
-              humidity: 98,
-              salt: 3,
-              airTemp: 27.6
-            }}
+            iotData={latestIoTData}
             cropInfo={cropData || undefined}
           />
         )}
@@ -499,6 +542,16 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          duration={5000}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

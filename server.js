@@ -14,17 +14,34 @@ const { Pool } = pkg;
 const dbPool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : new Pool({
-      host: process.env.PGHOST,
-      port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      database: process.env.PGDATABASE
-    });
+    host: process.env.PGHOST,
+    port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    database: process.env.PGDATABASE
+  });
 
 // No external pull URL; event-driven via /api/data
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Normalize PRIVATE_KEY: allow keys with or without 0x prefix.
+let _privateKey = process.env.PRIVATE_KEY || "c838981a09fff3fd401e01002732c43e6f53de1b72c535264d9ed3e8cc019130";
+if (_privateKey && !_privateKey.startsWith("0x")) {
+  _privateKey = `0x${_privateKey}`;
+}
+if (!_privateKey) {
+  console.error('❌ PRIVATE_KEY is not set. Set PRIVATE_KEY in .env or environment (0x...)');
+  process.exit(1);
+}
+
+let wallet;
+try {
+  wallet = new ethers.Wallet(_privateKey, provider);
+} catch (e) {
+  console.error('❌ Invalid PRIVATE_KEY provided:', e && e.message ? e.message : e);
+  process.exit(1);
+}
 
 const abiFile = JSON.parse(
   fs.readFileSync("./artifacts/contracts/SoilDataStore.sol/SoilDataStore.json")
@@ -160,7 +177,7 @@ async function bridgePending(limit = 3) {
     }
     return results;
   } catch (err) {
-    try { await client.query('ROLLBACK'); } catch {}
+    try { await client.query('ROLLBACK'); } catch { }
     throw err;
   } finally {
     client.release();
@@ -185,11 +202,11 @@ app.post("/api/data", async (req, res) => {
     const phosphorus_mg_kg = Number(req.body?.phosphorus);
     const potassium_mg_kg = Number(req.body?.potassium);
     const salt_mg_l = Number(req.body?.salt);
-    
-    if (!Number.isFinite(temperature_c) || !Number.isFinite(humidity_pct) || 
-        !Number.isFinite(conductivity_us_cm) || !Number.isFinite(ph_value) ||
-        !Number.isFinite(nitrogen_mg_kg) || !Number.isFinite(phosphorus_mg_kg) ||
-        !Number.isFinite(potassium_mg_kg) || !Number.isFinite(salt_mg_l)) {
+
+    if (!Number.isFinite(temperature_c) || !Number.isFinite(humidity_pct) ||
+      !Number.isFinite(conductivity_us_cm) || !Number.isFinite(ph_value) ||
+      !Number.isFinite(nitrogen_mg_kg) || !Number.isFinite(phosphorus_mg_kg) ||
+      !Number.isFinite(potassium_mg_kg) || !Number.isFinite(salt_mg_l)) {
       return res.status(400).json({ error: "invalid numeric fields" });
     }
 
@@ -343,7 +360,7 @@ app.post("/api/pushDailyInsight", async (req, res) => {
 
     // Convert recommendations to JSON string
     const recommendationsJson = JSON.stringify(recommendations || []);
-    
+
     // Generate record hash
     const dataToHash = JSON.stringify({
       id,
@@ -411,10 +428,10 @@ app.get("/api/getDailyInsights", async (req, res) => {
     let insights = [];
     for (let i = 0; i < count; i++) {
       const r = await contract.getDailyInsight(i);
-      
+
       // Convert rating number to string
       const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
-      
+
       // Parse recommendations JSON
       let recommendations = [];
       try {
@@ -422,7 +439,7 @@ app.get("/api/getDailyInsights", async (req, res) => {
       } catch (e) {
         console.warn(`Failed to parse recommendations for insight ${i}`);
       }
-      
+
       insights.push({
         id: i,
         date: formatEpochToVnString(Number(r.dateTimestamp)),
@@ -452,11 +469,11 @@ app.get("/api/getDailyInsights", async (req, res) => {
 app.get("/api/getLatestDailyInsight", async (req, res) => {
   try {
     console.log("\n📊 Fetching latest daily insight...");
-    
+
     const r = await contract.getLatestDailyInsight();
-    
+
     const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
-    
+
     // Parse recommendations JSON
     let recommendations = [];
     try {
@@ -464,7 +481,7 @@ app.get("/api/getLatestDailyInsight", async (req, res) => {
     } catch (e) {
       console.warn("Failed to parse recommendations for latest insight");
     }
-    
+
     const insight = {
       date: formatEpochToVnString(Number(r.dateTimestamp)),
       sampleCount: Number(r.sampleCount),

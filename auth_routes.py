@@ -348,7 +348,8 @@ def update_profile(user_id):
         
         # Build update query dynamically
         allowed_fields = ['full_name', 'email', 'farm_name', 'farm_location_lat', 
-                         'farm_location_lon', 'farm_area_hectares', 'current_crop']
+                         'farm_location_lon', 'farm_area_hectares', 'current_crop',
+                         'passkey_credential_id', 'passkey_public_key', 'phone']
         
         updates = []
         values = []

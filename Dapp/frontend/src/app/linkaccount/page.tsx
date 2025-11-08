@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle, Loader, Zap, Link } from 'lucide-react';
+import Toast from '@/components/Toast';
 
 interface LinkAccountResponse {
   success: boolean;
@@ -13,7 +14,7 @@ interface LinkAccountResponse {
   error?: string;
 }
 
-export default function LinkAccountPage() {
+function LinkAccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -25,6 +26,7 @@ export default function LinkAccountPage() {
   const [status, setStatus] = useState<'checking' | 'ready' | 'linking' | 'success' | 'error'>('checking');
   const [message, setMessage] = useState('Đang kiểm tra...');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -35,26 +37,26 @@ export default function LinkAccountPage() {
   const checkAuthentication = async () => {
     try {
       setMessage('Đang kiểm tra đăng nhập...');
-      
+
       // Check token first
       if (!token) {
         setStatus('error');
         setErrorMessage('Liên kết không hợp lệ. Token bị thiếu.');
         return;
       }
-      
+
       // Check localStorage for user session (FIX: use correct key)
       const userInfo = localStorage.getItem('aquamind_user');
-      
+
       if (!userInfo) {
         // Not logged in - redirect to login with callback
         setStatus('error');
         setErrorMessage('Bạn cần đăng nhập để liên kết tài khoản Zalo.');
-        
+
         // Store the callback URL with token
         const callbackUrl = `/linkaccount?token=${token}`;
         localStorage.setItem('login_callback_url', callbackUrl);
-        
+
         setTimeout(() => {
           router.push('/auth/login');
         }, 2000);
@@ -64,7 +66,7 @@ export default function LinkAccountPage() {
       const user = JSON.parse(userInfo);
       setCurrentUser(user);
       setIsAuthenticated(true);
-      
+
       setStatus('ready');
       setMessage('Sẵn sàng liên kết tài khoản');
     } catch (error) {
@@ -87,7 +89,7 @@ export default function LinkAccountPage() {
     setMessage('Đang liên kết tài khoản...');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/zalo/link-account`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://163-61-183-90.nip.io'}/api/auth/zalo/link-account`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,21 +105,24 @@ export default function LinkAccountPage() {
       if (data.success) {
         setStatus('success');
         setMessage('Tài khoản Zalo đã được liên kết thành công!');
-        
+
+        // Show toast notification
+        setShowToast(true);
+
         // Update user info in localStorage
         const updatedUser = {
           ...currentUser,
           zalo_id: data.zalo_id,
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
+
         // Clean up pending token
         localStorage.removeItem('pending_zalo_link_token');
-        
-        // Redirect after 2 seconds
+
+        // Redirect after 3 seconds (longer to show toast)
         setTimeout(() => {
           router.push('/dashboard');
-        }, 2000);
+        }, 3000);
       } else {
         setStatus('error');
         setErrorMessage(data.error || 'Lỗi khi liên kết tài khoản');
@@ -234,11 +239,10 @@ export default function LinkAccountPage() {
                 <button
                   onClick={handleLinkAccount}
                   disabled={isLoading}
-                  className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg transition-all duration-300 flex items-center justify-center gap-3 shadow-xl ${
-                    isLoading
+                  className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg transition-all duration-300 flex items-center justify-center gap-3 shadow-xl ${isLoading
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-green-500 via-emerald-600 to-blue-600 hover:from-green-600 hover:via-emerald-700 hover:to-blue-700 hover:shadow-2xl active:scale-98 transform hover:-translate-y-0.5'
-                  }`}
+                    }`}
                 >
                   {isLoading ? (
                     <>
@@ -334,6 +338,31 @@ export default function LinkAccountPage() {
           </p>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast
+          message="Liên kết Zalo thành công! Bạn sẽ được chuyển về Dashboard..."
+          type="success"
+          duration={3000}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function LinkAccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-green-600 mx-auto mb-4" />
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    }>
+      <LinkAccountContent />
+    </Suspense>
   );
 }

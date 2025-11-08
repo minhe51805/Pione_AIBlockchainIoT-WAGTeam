@@ -1,0 +1,17 @@
+2025-11-08 01:51:58,519 - __main__ - INFO - 
+============================================================
+2025-11-08 01:51:58,519 - __main__ - INFO - 🤖 AI Auto Analyzer Started
+2025-11-08 01:51:58,519 - __main__ - INFO - ============================================================
+2025-11-08 01:51:58,519 - __main__ - INFO - 📅 Schedule: Every day at 23:59 (Vietnam Time)
+2025-11-08 01:51:58,519 - __main__ - INFO - 🔗 AI Endpoint: http://localhost:8080/api/ai/analyze-daily
+2025-11-08 01:51:58,519 - __main__ - INFO - 📦 Database: 36.50.134.107:6000
+2025-11-08 01:51:58,519 - __main__ - INFO - ============================================================
+
+2025-11-08 01:51:58,519 - __main__ - INFO - 🚀 Running initial analysis...
+2025-11-08 01:51:58,520 - __main__ - INFO - ============================================================
+2025-11-08 01:51:58,520 - __main__ - INFO - 🔄 Starting auto analysis check...
+2025-11-08 01:51:58,690 - __main__ - INFO - 📊 No sensor data found for today (2025-11-08)
+2025-11-08 01:51:58,712 - __main__ - INFO - ⏭️  Skipping analysis - no new data
+2025-11-08 01:51:58,712 - __main__ - INFO - 
+✅ Scheduler is running. Press Ctrl+C to stop.
+

@@ -1,8 +1,3 @@
-"""
-AI Service - FastAPI Application
-Main entry point for AI analysis service
-"""
-
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

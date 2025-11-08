@@ -107,19 +107,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('✅ Passkey registered:', passkeyResult.credentialId);
 
       // Generate wallet address
-      const walletAddress = generateWalletAddress(passkeyResult.credentialId);
+      const walletAddress = generateWalletAddress(passkeyResult.credentialId || '');
       console.log('💰 Wallet created:', walletAddress);
 
       // Register with backend
       const registerData = {
         full_name: formData.full_name,
         phone: formData.phone,
-        email: formData.email,
-        farm_name: formData.farm_name,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
         farm_area_hectares: formData.farm_area_hectares,
-        current_crop: formData.current_crop,
-        passkey_credential_id: passkeyResult.credentialId,
-        passkey_public_key: passkeyResult.publicKey,
+        current_crop: formData.current_crop || '',
+        passkey_credential_id: passkeyResult.credentialId || '',
+        passkey_public_key: passkeyResult.publicKey || '',
         wallet_address: walletAddress,
       };
 
@@ -183,7 +183,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('✅ Passkey authenticated:', passkeyResult.credentialId);
 
       // Login with backend
-      const apiResult = await loginPasskey(passkeyResult.credentialId);
+      const apiResult = await loginPasskey(passkeyResult.credentialId || '');
 
       if (!apiResult.success || !apiResult.user) {
         throw new Error(apiResult.error || 'Đăng nhập thất bại');
@@ -229,10 +229,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         full_name: formData.full_name,
         phone: formData.phone,
         pin: formData.pin,
-        email: formData.email,
-        farm_name: formData.farm_name,
+        email: formData.email || '',
+        farm_name: formData.farm_name || '',
         farm_area_hectares: formData.farm_area_hectares,
-        current_crop: formData.current_crop,
+        current_crop: formData.current_crop || '',
         wallet_address: walletAddress,
       };
 

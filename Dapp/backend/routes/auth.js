@@ -6,7 +6,7 @@ const pool = require('../db');
 router.post('/register', async (req, res) => {
   const timestamp = new Date().toISOString();
   console.log(`\n🔐 [${timestamp}] REGISTER REQUEST`);
-  
+
   try {
     const {
       full_name,
@@ -98,7 +98,7 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('❌ Registration error:', error);
     console.error('   Error details:', error.message);
-    
+
     res.status(500).json({
       error: 'Registration failed',
       message: error.message
@@ -110,7 +110,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const timestamp = new Date().toISOString();
   console.log(`\n🔓 [${timestamp}] LOGIN REQUEST`);
-  
+
   try {
     const { credential_id, wallet_address } = req.body;
 
@@ -165,7 +165,7 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('❌ Login error:', error);
     console.error('   Error details:', error.message);
-    
+
     res.status(500).json({
       error: 'Login failed',
       message: error.message
@@ -177,14 +177,14 @@ router.post('/login', async (req, res) => {
 router.get('/user/:id', async (req, res) => {
   const timestamp = new Date().toISOString();
   console.log(`\n👤 [${timestamp}] GET USER REQUEST`);
-  
+
   try {
     const { id } = req.params;
     console.log(`   • Looking up: ${id}`);
 
     // Check if ID is numeric (database ID) or hex (wallet address)
     const isWalletAddress = id.startsWith('0x');
-    
+
     const query = isWalletAddress
       ? 'SELECT * FROM users WHERE wallet_address = $1'
       : 'SELECT * FROM users WHERE id = $1';
@@ -216,7 +216,7 @@ router.get('/user/:id', async (req, res) => {
   } catch (error) {
     console.error('❌ Get user error:', error);
     console.error('   Error details:', error.message);
-    
+
     res.status(500).json({
       error: 'Failed to get user',
       message: error.message

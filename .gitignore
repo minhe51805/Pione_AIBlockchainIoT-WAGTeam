@@ -5,3 +5,4 @@ dist/
 out/
 build/
 *.pack.gz
+node_modules

@@ -11,7 +11,7 @@ interface OverviewStats {
   last_updated?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_FLASK_API || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_FLASK_API || '';
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);

@@ -1,0 +1,140 @@
+
+> agrotwin-dapp@0.1.0 dev
+> next dev -p 3001 -H 0.0.0.0 -p 3001
+
+   ▲ Next.js 15.1.2
+   - Local:        http://localhost:3001
+   - Network:      http://0.0.0.0:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.9s
+ ○ Compiling /linkaccount ...
+
+warn - The class `delay-[2000ms]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `delay-&lsqb;2000ms&rsqb;` to silence this warning.
+ ✓ Compiled /linkaccount in 8s (961 modules)
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 9318ms
+ ✓ Compiled in 1408ms (464 modules)
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 67ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1077ms (956 modules)
+ GET / 200 in 1401ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.1s (1971 modules)
+ GET /dashboard 200 in 3273ms
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 134ms
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 61ms
+ GET /dashboard 200 in 20ms
+ ○ Compiling /auth/login ...
+ ✓ Compiled /auth/login in 1375ms (1992 modules)
+ GET /auth/login 200 in 1478ms
+ GET /dashboard 200 in 33ms
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 275ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 2.3s (1994 modules)
+ GET /settings 200 in 2472ms
+ GET /settings 200 in 28ms
+ GET /dashboard 200 in 51ms
+ ○ Compiling / ...
+ ✓ Compiled / in 866ms (1034 modules)
+ GET / 200 in 1157ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1926ms (1998 modules)
+ GET /_next/static/webpack/b310d49e114ca209.webpack.hot-update.json 404 in 2084ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ○ Compiling /auth/register ...
+ ✓ Compiled /auth/register in 865ms (2005 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /_next/static/webpack/b310d49e114ca209.webpack.hot-update.json 404 in 33ms
+ GET /auth/register 200 in 1084ms
+ GET /_next/static/webpack/b310d49e114ca209.webpack.hot-update.json 404 in 38ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /auth/login 200 in 55ms
+ ○ Compiling / ...
+ ✓ Compiled / in 792ms (1039 modules)
+ GET / 200 in 942ms
+ GET /dashboard 200 in 38ms
+ GET / 200 in 28ms
+ GET /dashboard 200 in 18ms
+ GET /settings 200 in 27ms
+ GET / 200 in 64ms
+ ✓ Compiled in 3.6s (2020 modules)
+ ✓ Compiled in 1ms (1039 modules)
+ ✓ Compiled in 0ms (1039 modules)
+ ✓ Compiled in 0ms (1039 modules)
+ GET /settings 200 in 2957ms
+ GET /settings 200 in 3304ms
+ GET /auth/register 200 in 3492ms
+ GET /auth/login 200 in 3494ms
+ ✓ Compiled in 3.4s (2015 modules)
+ GET /auth/login 200 in 181ms
+ GET /settings 200 in 181ms
+ GET /auth/register 200 in 184ms
+ ✓ Compiled in 1245ms (2015 modules)
+ GET /settings 200 in 107ms
+ GET /auth/login 200 in 90ms
+ GET /auth/register 200 in 90ms
+ GET /dashboard 200 in 45ms
+ GET /settings 200 in 16ms
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 223ms
+ GET /dashboard 200 in 18ms
+ GET /dashboard 200 in 474ms
+ GET /dashboard 200 in 25ms
+ ○ Compiling / ...
+ ✓ Compiled / in 784ms (1039 modules)
+ GET / 200 in 1086ms
+ GET /auth/login 200 in 34ms
+ GET /auth/login 200 in 72ms
+ GET /auth/login 200 in 42ms
+ GET / 200 in 37ms
+ GET /auth/login 200 in 24ms
+ GET /auth/login 200 in 48ms
+ GET /auth/register 200 in 55ms
+ GET /auth/login 200 in 34ms
+ GET /auth/login?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 32ms
+ GET /auth/login?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 41ms
+ GET /auth/register 200 in 39ms
+ GET / 200 in 34ms
+ GET / 200 in 42ms
+ GET / 200 in 35ms
+ GET / 200 in 39ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1592ms (2010 modules)
+ GET /login 404 in 1776ms
+ GET /security.txt 404 in 32ms
+ GET / 200 in 87ms
+ GET /auth/login 200 in 39ms
+ GET /linkaccount?token=7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB&zarsrc=33&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 72ms
+ GET /linkaccount?token=hAmFU7o3IixQQmoMqC9GFkb3MgkqcU7O 200 in 52ms
+ GET /auth/login 200 in 31ms
+ GET /auth/login?callback=%2Flinkaccount%3Ftoken%3DhAmFU7o3IixQQmoMqC9GFkb3MgkqcU7O 200 in 22ms
+ GET /auth/login?callback=%2Flinkaccount%3Ftoken%3D7S3su8z26Yu2oaMbFaOMPKEriZZTmEGB 200 in 28ms
+ GET /auth/register 200 in 83ms
+ GET /dashboard 200 in 79ms
+ GET /auth/login 200 in 24ms
+ GET /linkaccount?token=hAmFU7o3IixQQmoMqC9GFkb3MgkqcU7O 200 in 21ms
+ GET / 200 in 42ms
+ GET /auth/login 200 in 20ms
+ GET /dashboard 200 in 28ms
+ GET /settings 200 in 36ms
+ GET / 200 in 39ms
+ GET /auth/login 200 in 23ms
+ GET / 200 in 35ms
+ GET /auth/login 200 in 20ms
+ ✓ Compiled in 1227ms (1034 modules)
+
+warn - The class `delay-[2000ms]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `delay-&lsqb;2000ms&rsqb;` to silence this warning.
+ ✓ Compiled in 20.1s (2015 modules)
+ GET /dashboard 200 in 395ms
+ GET /auth/login 200 in 381ms
+ ✓ Compiled in 2.7s (2015 modules)
+ GET /auth/login 200 in 152ms
+ GET /dashboard 200 in 46ms
+ ✓ Compiled in 1232ms (2015 modules)
+ GET /auth/login 200 in 169ms
+ GET /dashboard 200 in 162ms
+ ✓ Compiled in 2.7s (2015 modules)
+ GET /dashboard 200 in 437ms
+ GET /auth/login 200 in 462ms
