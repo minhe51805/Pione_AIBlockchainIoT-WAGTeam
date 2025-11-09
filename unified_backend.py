@@ -744,47 +744,51 @@ def flask_ai_chat():
             return jsonify({"error": "Lỗi đọc database"}), 500
         
         # ============================================================
-        # TRY GEMINI AI FIRST (with retry logic)
+        # TRY GEMINI AI FIRST (with retry logic) - LLM WITH FACT
         # ============================================================
         if gemini_model:
             try:
-                logger.info("🤖 Using Gemini AI for response...")
-                
-                # Build comprehensive prompt for Gemini
-                gemini_prompt = f"""Bạn là chuyên gia nông nghiệp thông minh, thân thiện và chuyên nghiệp. Hãy trả lời câu hỏi của người nông dân.
+                logger.info("🤖 Using Gemini AI (LLM WITH FACT mode)...")
 
-**Câu hỏi:** {message}
+                # Build STRICT fact-based prompt for Gemini
+                # IMPORTANT: Only use REAL data from database, no speculation
+                gemini_prompt = f"""ROLE: Bạn là chuyên gia nông nghiệp. Trả lời CHỈDỰA TRÊN DỮ LIỆU THỰC TẾ dưới đây. KHÔNG ĐƯỢC BỊA CHUYỆN.
 
-**Dữ liệu cảm biến hiện tại (REAL-TIME từ database):**
-- Nhiệt độ đất: {temp}°C
-- Độ ẩm đất: {moisture}%
-- pH đất: {ph}
+QUESTION: {message}
+
+REAL-TIME SENSOR DATA (từ database, đo được):
+- Soil Temperature: {temp}°C
+- Soil Moisture: {moisture}%
+- Soil pH: {ph}
 - Nitrogen (N): {nitrogen} mg/kg
 - Phosphorus (P): {phosphorus} mg/kg
 - Potassium (K): {potassium} mg/kg
-- Độ ẩm không khí: {humidity}%
+- Air Humidity: {humidity}%
 
-**Hướng dẫn trả lời:**
-1. Gọi người dùng là "bác" (thân thiện, kiểu nông dân Việt Nam)
-2. Phân tích CỤ THỂ dựa trên dữ liệu THỰC TẾ trên
-3. So sánh với ngưỡng tối ưu:
-   - Nhiệt độ đất: 20-30°C
-   - Độ ẩm đất: 40-70%
-   - pH: 6.0-7.5
-   - NPK: N≥40, P≥30, K≥150 mg/kg
-4. Đưa ra lời khuyên HÀNH ĐỘNG cụ thể (bón phân gì, bao nhiêu kg/sào)
-5. Nếu hỏi về cây trồng → đề xuất 2-3 loại cây PHÙ HỢP với điều kiện hiện tại
-6. Dùng emoji phù hợp (✅ ⚠️ 🌡️ 💧 🌱 🍅 🥬 🌶️)
-7. TRẢ LỜI NGẮN GỌN, DỄ HIỂU (không quá 200 từ)
+OPTIMAL RANGES (để so sánh):
+- Temperature: 20-30°C
+- Moisture: 40-70%
+- pH: 6.0-7.5
+- NPK: N≥40, P≥30, K≥150 mg/kg
 
-Hãy trả lời:"""
+RULES (TUÂN THỦ CHẶT):
+1. CHỈ phân tích dữ liệu THỰC TẾ ở trên
+2. KHÔNG được đoán hoặc bịa thêm thông tin
+3. Nếu câu hỏi không liên quan đến dữ liệu → trả lời "Cháu chỉ có thể tư vấn dựa trên dữ liệu đất của bác"
+4. So sánh từng chỉ số với ngưỡng tối ưu
+5. Đưa ra lời khuyên CỤ THỂ (ví dụ: "bón urê 10kg/sào" chứ không phải "bón phân")
+6. Gọi người dùng là "bác"
+7. Dùng emoji: ✅ ⚠️ 🌡️ 💧 🌱 🍅 🥬 🌶️
+8. Trả lời ngắn gọn (dưới 200 từ)
+
+ANSWER (chỉ dựa trên dữ liệu thực tế):"""
 
                 # Call Gemini with retry
                 gemini_response = call_gemini_with_retry(gemini_prompt)
                 logger.info(f"✅ Gemini response received ({len(gemini_response)} chars)")
-                
+
                 return jsonify({"response": gemini_response}), 200
-                
+
             except Exception as gemini_error:
                 logger.error(f"⚠️  Gemini API failed: {gemini_error}")
                 logger.info("🔄 Falling back to rule-based AI...")
@@ -1654,6 +1658,880 @@ def analyze_display_only():
         
     except Exception as e:
         logger.error(f"❌ Display-only analysis error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@flask_app.route("/api/ai/analyze-daily-with-recommendations", methods=["POST"])
+def analyze_daily_with_recommendations():
+    """
+    Nút "Analyze Daily": PHÂN TÍCH DỮ LIỆU TỪ ĐẦU NGÀY ĐẾN HIỆN TẠI + LƯU VÀO ai_recommendations + BẬT CHATBOT
+    
+    Request: {"date": "YYYY-MM-DD"}
+    Response: analysis result + recommendations saved to DB
+    """
+    try:
+        data = request.get_json() or {}
+        date_str = data.get("date")
+        
+        if not date_str:
+            return jsonify({"status": "error", "message": "date is required (YYYY-MM-DD)"}), 400
+        
+        # Query + aggregate data - FROM START OF DAY TO NOW (or end of day if past date)
+        with get_db_conn() as conn:
+            with conn.cursor() as cur:
+                query = """
+                SELECT
+                    COUNT(*) as sample_count,
+                    MIN(measured_at_vn) as first_reading,
+                    MAX(measured_at_vn) as last_reading,
+                    AVG(soil_temperature_c) as soil_temperature,
+                    AVG(soil_moisture_pct) as soil_moisture,
+                    AVG(ph_value) as ph,
+                    AVG(nitrogen_mg_kg) as nitrogen,
+                    AVG(phosphorus_mg_kg) as phosphorus,
+                    AVG(potassium_mg_kg) as potassium,
+                    AVG(air_temperature_c) as air_temperature,
+                    AVG(air_humidity_pct) as air_humidity,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY conductivity_us_cm) as conductivity,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salt_mg_l) as salt,
+                    (SUM(CASE WHEN is_raining THEN 1 ELSE 0 END)::float / COUNT(*)) > 0.5 as is_raining
+                FROM sensor_readings
+                WHERE measured_at_vn >= %s::date 
+                  AND measured_at_vn <= LEAST((%s::date + INTERVAL '1 day'), (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'))
+                """
+                
+                cur.execute(query, (date_str, date_str))
+                result = cur.fetchone()
+                
+                if not result or result[0] == 0:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"No sensor data found for date {date_str}"
+                    }), 404
+                
+                aggregated_data = {
+                    "sample_count": int(result[0]),
+                    "time_range": {
+                        "first": result[1].strftime('%Y-%m-%d %H:%M:%S') if result[1] else None,
+                        "last": result[2].strftime('%Y-%m-%d %H:%M:%S') if result[2] else None
+                    },
+                    "averages": {
+                        "soil_temperature": float(result[3]) if result[3] is not None else 0,
+                        "soil_moisture": float(result[4]) if result[4] is not None else 0,
+                        "ph": float(result[5]) if result[5] is not None else 0,
+                        "nitrogen": float(result[6]) if result[6] is not None else 0,
+                        "phosphorus": float(result[7]) if result[7] is not None else 0,
+                        "potassium": float(result[8]) if result[8] is not None else 0,
+                        "air_temperature": float(result[9]) if result[9] is not None else 0,
+                        "air_humidity": float(result[10]) if result[10] is not None else 0,
+                        "conductivity": float(result[11]) if result[11] is not None else 0,
+                        "salt": float(result[12]) if result[12] is not None else 0,
+                        "is_raining": bool(result[13])
+                    }
+                }
+        
+        # Call Flask AI analysis endpoint (WITH ML MODELS)
+        ai_service_url = "http://localhost:8080/api/ai/analyze"
+        ai_payload = {
+            "soil_temperature": aggregated_data['averages']['soil_temperature'],
+            "soil_moisture": aggregated_data['averages']['soil_moisture'],
+            "conductivity": int(aggregated_data['averages']['conductivity']),
+            "ph": aggregated_data['averages']['ph'],
+            "nitrogen": int(aggregated_data['averages']['nitrogen']),
+            "phosphorus": int(aggregated_data['averages']['phosphorus']),
+            "potassium": int(aggregated_data['averages']['potassium']),
+            "salt": int(aggregated_data['averages']['salt']),
+            "air_temperature": aggregated_data['averages']['air_temperature'],
+            "air_humidity": aggregated_data['averages']['air_humidity'],
+            "is_raining": aggregated_data['averages']['is_raining'],
+            "mode": "discovery"
+        }
+        
+        ai_result = None
+        try:
+            import urllib.request
+            import json as json_lib
+            
+            req = urllib.request.Request(
+                ai_service_url,
+                data=json_lib.dumps(ai_payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                ai_result = json_lib.loads(resp.read().decode("utf-8"))
+                
+        except Exception as e:
+            ai_result = {"error": str(e), "status": "AI service unavailable"}
+        
+        # 📝 BƯỚC 1: LƯU VÀO daily_insights TRƯỚC
+        daily_insight_id = None
+        if ai_result and not ai_result.get("error"):
+            with get_db_conn() as conn:
+                with conn.cursor() as cur:
+                    # Save to daily_insights first
+                    crop_rec = ai_result.get('crop_recommendation', {})
+                    soil_health = ai_result.get('soil_health', {})
+                    anomaly = ai_result.get('anomaly_detection', {})
+                    
+                    recommended_crop = crop_rec.get('best_crop', 'Unknown')
+                    crop_confidence = crop_rec.get('confidence', 0)
+                    soil_score = soil_health.get('overall_score', 0)
+                    soil_rating = soil_health.get('rating', 'Unknown')
+                    has_anomaly = anomaly.get('is_anomaly', False)
+                    anomaly_score = anomaly.get('anomaly_score', 0)
+                    
+                    # Determine summary status
+                    if has_anomaly:
+                        summary_status = "ALERT"
+                    elif soil_score >= 80:
+                        summary_status = "EXCELLENT"
+                    elif soil_score >= 60:
+                        summary_status = "GOOD"
+                    else:
+                        summary_status = "WARNING"
+                    
+                    summary_text = f"Daily analysis for {date_str}: {recommended_crop} (confidence {crop_confidence:.0%}), Soil health {soil_score:.0f}/100"
+                    
+                    # Generate recommendations_json
+                    import json as json_module
+                    recommendations_list = []
+                    if crop_rec.get('best_crop'):
+                        recommendations_list.append({
+                            "type": "crop",
+                            "action": f"Plant {crop_rec.get('best_crop')}",
+                            "confidence": crop_confidence
+                        })
+                    if soil_score < 70:
+                        recommendations_list.append({
+                            "type": "soil_improvement",
+                            "action": "Improve soil health",
+                            "current": soil_score,
+                            "target": 80
+                        })
+                    
+                    insert_query = """
+                    INSERT INTO daily_insights (
+                        date_vn, total_readings,
+                        soil_temperature_avg, soil_moisture_avg, conductivity_avg, ph_avg,
+                        nitrogen_avg, phosphorus_avg, potassium_avg, salt_avg,
+                        air_temperature_avg, air_humidity_avg, is_raining_majority,
+                        recommended_crop, crop_confidence, 
+                        soil_health_score, soil_health_rating,
+                        has_anomaly, anomaly_score,
+                        summary_status, summary_text,
+                        ai_analysis_json, recommendations_json
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """
+                    
+                    cur.execute(insert_query, (
+                        date_str,
+                        aggregated_data['sample_count'],
+                        aggregated_data['averages']['soil_temperature'],
+                        aggregated_data['averages']['soil_moisture'],
+                        aggregated_data['averages']['conductivity'],
+                        aggregated_data['averages']['ph'],
+                        aggregated_data['averages']['nitrogen'],
+                        aggregated_data['averages']['phosphorus'],
+                        aggregated_data['averages']['potassium'],
+                        aggregated_data['averages']['salt'],
+                        aggregated_data['averages']['air_temperature'],
+                        aggregated_data['averages']['air_humidity'],
+                        aggregated_data['averages']['is_raining'],
+                        recommended_crop,
+                        crop_confidence,
+                        soil_score,
+                        soil_rating,
+                        has_anomaly,
+                        anomaly_score,
+                        summary_status,
+                        summary_text,
+                        json_module.dumps(ai_result),
+                        json_module.dumps(recommendations_list)
+                    ))
+                    
+                    daily_insight_id = cur.fetchone()[0]
+                    conn.commit()
+                    logger.info(f"✅ Saved daily_insight_id={daily_insight_id} for {date_str}")
+        
+        # 📝 BƯỚC 1.5: LƯU VÀO ai_analysis (để có ai_analysis_id)
+        ai_analysis_id = None
+        if ai_result and not ai_result.get("error") and daily_insight_id:
+            with get_db_conn() as conn:
+                with conn.cursor() as cur:
+                    # Lưu 1 record đại diện cho daily analysis vào ai_analysis
+                    crop_rec = ai_result.get('crop_recommendation', {})
+                    soil_health = ai_result.get('soil_health', {})
+                    anomaly = ai_result.get('anomaly_detection', {})
+                    
+                    insert_ai_analysis = """
+                    INSERT INTO ai_analysis (
+                        analysis_type,
+                        analysis_mode,
+                        crop_recommendation,
+                        soil_health,
+                        anomaly_detection,
+                        confidence_avg
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """
+                    
+                    cur.execute(insert_ai_analysis, (
+                        'auto-daily',
+                        'discovery',
+                        json_module.dumps(crop_rec),
+                        json_module.dumps(soil_health),
+                        json_module.dumps(anomaly),
+                        crop_rec.get('confidence', 0)
+                    ))
+                    
+                    ai_analysis_id = cur.fetchone()[0]
+                    conn.commit()
+                    logger.info(f"✅ Saved ai_analysis_id={ai_analysis_id} for daily analysis")
+        
+        # 📝 BƯỚC 2: LƯU VÀO ai_recommendations VỚI CẢ daily_insight_id VÀ ai_analysis_id
+        recommendations_saved = []
+        if ai_result and not ai_result.get("error") and daily_insight_id and ai_analysis_id:
+            with get_db_conn() as conn:
+                with conn.cursor() as cur:
+                    # Generate recommendations based on AI analysis
+                    crop_rec = ai_result.get("crop_recommendation", {})
+                    soil_health = ai_result.get("soil_health", {})
+                    
+                    # Recommendation 1: Crop recommendation
+                    if crop_rec.get("best_crop"):
+                        cur.execute("""
+                            INSERT INTO ai_recommendations 
+                            (daily_insight_id, ai_analysis_id, recommendation_type, priority, action, details, reasoning, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            daily_insight_id,
+                            ai_analysis_id,
+                            'general',
+                            'HIGH',
+                            f"Recommend planting: {crop_rec.get('best_crop', 'N/A')}",
+                            f"Confidence: {crop_rec.get('confidence', 0):.0%}",
+                            f"Based on current soil conditions (pH: {aggregated_data['averages']['ph']:.1f}, NPK: {aggregated_data['averages']['nitrogen']:.0f}/{aggregated_data['averages']['phosphorus']:.0f}/{aggregated_data['averages']['potassium']:.0f})",
+                            'pending'
+                        ))
+                        rec_id = cur.fetchone()[0]
+                        recommendations_saved.append(rec_id)
+                    
+                    # Recommendation 2: Soil health improvement
+                    health_score = soil_health.get("overall_score", 0)
+                    if health_score < 70:
+                        priority = 'HIGH' if health_score < 50 else 'MEDIUM'
+                        cur.execute("""
+                            INSERT INTO ai_recommendations 
+                            (daily_insight_id, ai_analysis_id, recommendation_type, priority, action, details, reasoning, current_value, target_value, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            daily_insight_id,
+                            ai_analysis_id,
+                            'fertilizer',
+                            priority,
+                            "Improve soil health",
+                            f"Current health score: {health_score}/100",
+                            f"Low soil quality detected. Consider: {', '.join(soil_health.get('concerns', ['general soil improvement']))}",
+                            health_score,
+                            80.0,
+                            'pending'
+                        ))
+                        rec_id = cur.fetchone()[0]
+                        recommendations_saved.append(rec_id)
+                    
+                    # Recommendation 3: NPK balancing
+                    npk = aggregated_data['averages']
+                    if npk['nitrogen'] < 20 or npk['phosphorus'] < 15 or npk['potassium'] < 150:
+                        details = []
+                        if npk['nitrogen'] < 20:
+                            details.append(f"Nitrogen: {npk['nitrogen']:.0f} mg/kg (Low)")
+                        if npk['phosphorus'] < 15:
+                            details.append(f"Phosphorus: {npk['phosphorus']:.0f} mg/kg (Low)")
+                        if npk['potassium'] < 150:
+                            details.append(f"Potassium: {npk['potassium']:.0f} mg/kg (Low)")
+                        
+                        cur.execute("""
+                            INSERT INTO ai_recommendations 
+                            (daily_insight_id, ai_analysis_id, recommendation_type, priority, action, details, reasoning, deadline_days, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            daily_insight_id,
+                            ai_analysis_id,
+                            'fertilizer',
+                            'MEDIUM',
+                            "Balance NPK nutrients",
+                            '; '.join(details),
+                            "NPK levels are below optimal range for most crops",
+                            14,  # 2 weeks deadline
+                            'pending'
+                        ))
+                        rec_id = cur.fetchone()[0]
+                        recommendations_saved.append(rec_id)
+                    
+                    # Recommendation 4: Moisture/Irrigation
+                    moisture = npk['soil_moisture']
+                    if moisture < 30:
+                        cur.execute("""
+                            INSERT INTO ai_recommendations 
+                            (daily_insight_id, ai_analysis_id, recommendation_type, priority, action, details, reasoning, current_value, target_value, unit, deadline_days, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            daily_insight_id,
+                            ai_analysis_id,
+                            'irrigation',
+                            'HIGH',
+                            "Increase irrigation",
+                            f"Current moisture: {moisture:.1f}%",
+                            "Soil moisture is critically low. Immediate watering needed.",
+                            moisture,
+                            50.0,
+                            '%',
+                            1,  # 1 day deadline
+                            'pending'
+                        ))
+                        rec_id = cur.fetchone()[0]
+                        recommendations_saved.append(rec_id)
+                    elif moisture > 80:
+                        cur.execute("""
+                            INSERT INTO ai_recommendations 
+                            (daily_insight_id, ai_analysis_id, recommendation_type, priority, action, details, reasoning, current_value, target_value, unit, deadline_days, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            daily_insight_id,
+                            ai_analysis_id,
+                            'irrigation',
+                            'MEDIUM',
+                            "Reduce irrigation",
+                            f"Current moisture: {moisture:.1f}%",
+                            "Soil moisture is too high. Risk of root rot. Reduce watering.",
+                            moisture,
+                            60.0,
+                            '%',
+                            3,
+                            'pending'
+                        ))
+                        rec_id = cur.fetchone()[0]
+                        recommendations_saved.append(rec_id)
+                    
+                    conn.commit()
+        
+        logger.info(f"✅ Daily analysis with {len(recommendations_saved)} recommendations for {date_str} (daily_insight_id={daily_insight_id}, ai_analysis_id={ai_analysis_id})")
+        
+        return jsonify({
+            "status": "success",
+            "date": date_str,
+            "aggregated_data": aggregated_data,
+            "ai_analysis": ai_result,
+            "daily_insight_id": daily_insight_id,
+            "ai_analysis_id": ai_analysis_id,
+            "recommendations_saved": len(recommendations_saved),
+            "recommendation_ids": recommendations_saved,
+            "saved_to_db": True
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Daily analysis with recommendations error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@flask_app.route("/api/debug/daily-insights", methods=["GET"])
+def debug_daily_insights():
+    """Debug endpoint to view daily_insights table"""
+    try:
+        with get_db_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, date_vn, recommended_crop, soil_health_score, has_anomaly, total_readings, created_at
+                    FROM daily_insights
+                    ORDER BY id DESC
+                    LIMIT 30
+                """)
+                results = cur.fetchall()
+                return jsonify({
+                    "status": "success",
+                    "count": len(results),
+                    "daily_insights": results
+                }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@flask_app.route("/api/debug/ai-analysis", methods=["GET"])
+def debug_ai_analysis():
+    """Debug endpoint to view ai_analysis table"""
+    try:
+        with get_db_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, analysis_type, crop_recommendation, analyzed_at_vn, created_at_vn
+                    FROM ai_analysis
+                    ORDER BY id DESC
+                    LIMIT 20
+                """)
+                results = cur.fetchall()
+                return jsonify({
+                    "status": "success",
+                    "count": len(results),
+                    "ai_analysis_records": results
+                }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@flask_app.route("/api/debug/recommendations", methods=["GET"])
+def debug_recommendations():
+    """Debug endpoint to view recent recommendations"""
+    try:
+        with get_db_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT 
+                        r.id,
+                        r.daily_insight_id,
+                        r.ai_analysis_id,
+                        r.recommendation_type,
+                        r.priority,
+                        r.action,
+                        r.details,
+                        r.status,
+                        r.created_at_vn,
+                        d.date_vn as daily_date,
+                        d.recommended_crop
+                    FROM ai_recommendations r
+                    LEFT JOIN daily_insights d ON r.daily_insight_id = d.id
+                    ORDER BY r.id DESC
+                    LIMIT 30
+                """)
+                
+                results = cur.fetchall()
+                return jsonify({
+                    "status": "success",
+                    "count": len(results),
+                    "recommendations": results
+                }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@flask_app.route("/api/ai/analyze-daily-insights", methods=["POST"])
+def analyze_daily_insights():
+    """
+    Nút "Analyze Daily Insights": PHÂN TÍCH DỮ LIỆU TỪ ĐẦU NGÀY ĐẾN HIỆN TẠI + LƯU VÀO daily_insights + PUSH BLOCKCHAIN
+    
+    Request: {"date": "YYYY-MM-DD"} (optional, defaults to today)
+    Response: analysis result + daily_insights record ID + blockchain TX
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        date_str = data.get("date")
+        
+        # Default to today if no date provided
+        if not date_str:
+            from datetime import datetime
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        logger.info(f"📅 Analyzing daily insights for {date_str}...")
+        
+        # Query + aggregate data FROM START OF DAY TO NOW
+        with get_db_conn() as conn:
+            with conn.cursor() as cur:
+                query = """
+                SELECT
+                    COUNT(*) as sample_count,
+                    MIN(measured_at_vn) as first_reading,
+                    MAX(measured_at_vn) as last_reading,
+                    AVG(soil_temperature_c) as soil_temperature,
+                    AVG(soil_moisture_pct) as soil_moisture,
+                    AVG(ph_value) as ph,
+                    AVG(nitrogen_mg_kg) as nitrogen,
+                    AVG(phosphorus_mg_kg) as phosphorus,
+                    AVG(potassium_mg_kg) as potassium,
+                    AVG(air_temperature_c) as air_temperature,
+                    AVG(air_humidity_pct) as air_humidity,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY conductivity_us_cm) as conductivity,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salt_mg_l) as salt,
+                    (SUM(CASE WHEN is_raining THEN 1 ELSE 0 END)::float / COUNT(*)) > 0.5 as is_raining
+                FROM sensor_readings
+                WHERE measured_at_vn >= %s::date 
+                  AND measured_at_vn <= LEAST((%s::date + INTERVAL '1 day'), (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'))
+                """
+                
+                cur.execute(query, (date_str, date_str))
+                result = cur.fetchone()
+                
+                if not result or result[0] == 0:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"No sensor data found for date {date_str}"
+                    }), 404
+                
+                aggregated_data = {
+                    "sample_count": int(result[0]),
+                    "time_range": {
+                        "first": result[1].strftime('%Y-%m-%d %H:%M:%S') if result[1] else None,
+                        "last": result[2].strftime('%Y-%m-%d %H:%M:%S') if result[2] else None
+                    },
+                    "soil_temperature_avg": float(result[3]) if result[3] is not None else None,
+                    "soil_moisture_avg": float(result[4]) if result[4] is not None else None,
+                    "ph_avg": float(result[5]) if result[5] is not None else None,
+                    "nitrogen_avg": int(result[6]) if result[6] is not None else None,
+                    "phosphorus_avg": int(result[7]) if result[7] is not None else None,
+                    "potassium_avg": int(result[8]) if result[8] is not None else None,
+                    "air_temperature_avg": float(result[9]) if result[9] is not None else None,
+                    "air_humidity_avg": float(result[10]) if result[10] is not None else None,
+                    "conductivity_avg": float(result[11]) if result[11] is not None else None,
+                    "salt_avg": int(result[12]) if result[12] is not None else None,
+                    "is_raining_majority": bool(result[13])
+                }
+        
+        logger.info(f"   ✅ Aggregated {aggregated_data['sample_count']} samples")
+        
+        # Call Flask AI analysis endpoint (WITH ML MODELS)
+        ai_service_url = "http://localhost:8080/api/ai/analyze"
+        ai_payload = {
+            "soil_temperature": aggregated_data['soil_temperature_avg'] or 0,
+            "soil_moisture": aggregated_data['soil_moisture_avg'] or 0,
+            "conductivity": int(aggregated_data['conductivity_avg'] or 0),
+            "ph": aggregated_data['ph_avg'] or 0,
+            "nitrogen": aggregated_data['nitrogen_avg'] or 0,
+            "phosphorus": aggregated_data['phosphorus_avg'] or 0,
+            "potassium": aggregated_data['potassium_avg'] or 0,
+            "salt": aggregated_data['salt_avg'] or 0,
+            "air_temperature": aggregated_data['air_temperature_avg'] or 0,
+            "air_humidity": aggregated_data['air_humidity_avg'] or 0,
+            "is_raining": aggregated_data['is_raining_majority'],
+            "mode": "discovery"
+        }
+        
+        ai_result = None
+        try:
+            import urllib.request
+            import json as json_lib
+            
+            req = urllib.request.Request(
+                ai_service_url,
+                data=json_lib.dumps(ai_payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                ai_result = json_lib.loads(resp.read().decode("utf-8"))
+                
+        except Exception as e:
+            logger.error(f"⚠️ AI service error: {e}")
+            ai_result = {"error": str(e), "status": "AI service unavailable"}
+        
+        # 💾 SAVE TO daily_insights TABLE
+        record_id = None
+        blockchain_tx = None
+        
+        if ai_result and not ai_result.get("error"):
+            try:
+                import json as json_module
+                
+                crop_rec = ai_result.get('crop_recommendation', {})
+                soil_health = ai_result.get('soil_health', {})
+                anomaly = ai_result.get('anomaly_detection', {})
+                
+                recommended_crop = crop_rec.get('best_crop', 'Unknown')
+                crop_confidence = crop_rec.get('confidence', 0)
+                soil_score = soil_health.get('overall_score', 0)
+                soil_rating = soil_health.get('rating', 'Unknown')
+                has_anomaly = anomaly.get('is_anomaly', False)
+                anomaly_score = anomaly.get('anomaly_score', 0)
+                
+                # Determine summary status
+                if has_anomaly:
+                    summary_status = "ALERT"
+                elif soil_score >= 80:
+                    summary_status = "EXCELLENT"
+                elif soil_score >= 60:
+                    summary_status = "GOOD"
+                else:
+                    summary_status = "WARNING"
+                
+                summary_text = f"Daily analysis for {date_str}: {recommended_crop} (confidence {crop_confidence:.0%}), Soil health {soil_score:.0f}/100"
+                
+                # Generate recommendations_json
+                recommendations_list = []
+                if crop_rec.get('best_crop'):
+                    recommendations_list.append({
+                        "type": "crop",
+                        "action": f"Plant {crop_rec.get('best_crop')}",
+                        "confidence": crop_confidence
+                    })
+                if soil_score < 70:
+                    recommendations_list.append({
+                        "type": "soil_improvement",
+                        "action": "Improve soil health",
+                        "current": soil_score,
+                        "target": 80
+                    })
+                
+                logger.info(f"💾 Saving to daily_insights table...")
+                
+                with get_db_conn() as conn:
+                    with conn.cursor() as cur:
+                        # Check if record already exists for this date
+                        cur.execute("SELECT id FROM daily_insights WHERE date_vn = %s", (date_str,))
+                        existing = cur.fetchone()
+                        
+                        if existing:
+                            # Update existing record
+                            update_query = """
+                            UPDATE daily_insights SET
+                                total_readings = %s,
+                                soil_temperature_avg = %s,
+                                soil_moisture_avg = %s,
+                                conductivity_avg = %s,
+                                ph_avg = %s,
+                                nitrogen_avg = %s,
+                                phosphorus_avg = %s,
+                                potassium_avg = %s,
+                                salt_avg = %s,
+                                air_temperature_avg = %s,
+                                air_humidity_avg = %s,
+                                is_raining_majority = %s,
+                                recommended_crop = %s,
+                                crop_confidence = %s,
+                                soil_health_score = %s,
+                                soil_health_rating = %s,
+                                has_anomaly = %s,
+                                anomaly_score = %s,
+                                summary_status = %s,
+                                summary_text = %s,
+                                ai_analysis_json = %s,
+                                recommendations_json = %s,
+                                updated_at = NOW()
+                            WHERE date_vn = %s
+                            RETURNING id
+                            """
+                            
+                            cur.execute(update_query, (
+                                aggregated_data['sample_count'],
+                                aggregated_data['soil_temperature_avg'],
+                                aggregated_data['soil_moisture_avg'],
+                                aggregated_data['conductivity_avg'],
+                                aggregated_data['ph_avg'],
+                                aggregated_data['nitrogen_avg'],
+                                aggregated_data['phosphorus_avg'],
+                                aggregated_data['potassium_avg'],
+                                aggregated_data['salt_avg'],
+                                aggregated_data['air_temperature_avg'],
+                                aggregated_data['air_humidity_avg'],
+                                aggregated_data['is_raining_majority'],
+                                recommended_crop,
+                                crop_confidence,
+                                soil_score,
+                                soil_rating,
+                                has_anomaly,
+                                anomaly_score,
+                                summary_status,
+                                summary_text,
+                                json_module.dumps(ai_result),
+                                json_module.dumps(recommendations_list),
+                                date_str
+                            ))
+                            
+                            record_id = cur.fetchone()[0]
+                            logger.info(f"   ✅ Updated existing daily_insights (ID: {record_id})")
+                            
+                        else:
+                            # Insert new record
+                            insert_query = """
+                            INSERT INTO daily_insights (
+                                date_vn, total_readings,
+                                soil_temperature_avg, soil_moisture_avg, conductivity_avg, ph_avg,
+                                nitrogen_avg, phosphorus_avg, potassium_avg, salt_avg,
+                                air_temperature_avg, air_humidity_avg, is_raining_majority,
+                                recommended_crop, crop_confidence,
+                                soil_health_score, soil_health_rating,
+                                has_anomaly, anomaly_score,
+                                summary_status, summary_text,
+                                ai_analysis_json, recommendations_json
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                            """
+                            
+                            cur.execute(insert_query, (
+                                date_str,
+                                aggregated_data['sample_count'],
+                                aggregated_data['soil_temperature_avg'],
+                                aggregated_data['soil_moisture_avg'],
+                                aggregated_data['conductivity_avg'],
+                                aggregated_data['ph_avg'],
+                                aggregated_data['nitrogen_avg'],
+                                aggregated_data['phosphorus_avg'],
+                                aggregated_data['potassium_avg'],
+                                aggregated_data['salt_avg'],
+                                aggregated_data['air_temperature_avg'],
+                                aggregated_data['air_humidity_avg'],
+                                aggregated_data['is_raining_majority'],
+                                recommended_crop,
+                                crop_confidence,
+                                soil_score,
+                                soil_rating,
+                                has_anomaly,
+                                anomaly_score,
+                                summary_status,
+                                summary_text,
+                                json_module.dumps(ai_result),
+                                json_module.dumps(recommendations_list)
+                            ))
+                            
+                            record_id = cur.fetchone()[0]
+                            logger.info(f"   ✅ Saved new daily_insights (ID: {record_id})")
+                        
+                        conn.commit()
+                
+                # 🔗 PUSH TO BLOCKCHAIN
+                # IMPORTANT: Blockchain không cho duplicate date - chỉ push 1 lần duy nhất!
+                # Check DB xem đã push chưa
+                should_push_blockchain = False
+                existing_blockchain_tx = None
+                
+                with get_db_conn() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            SELECT blockchain_status, blockchain_tx_hash 
+                            FROM daily_insights 
+                            WHERE id = %s
+                        """, (record_id,))
+                        bc_row = cur.fetchone()
+                        if bc_row:
+                            existing_blockchain_status = bc_row[0]
+                            existing_blockchain_tx = bc_row[1]
+                            
+                            # Nếu đã push thành công rồi thì SKIP
+                            if existing_blockchain_status == 'confirmed' and existing_blockchain_tx:
+                                logger.info(f"⏭️  Skipping blockchain push (already confirmed: {existing_blockchain_tx})")
+                                blockchain_tx = existing_blockchain_tx
+                                should_push_blockchain = False
+                            # Nếu chưa push hoặc failed thì thử lại
+                            else:
+                                should_push_blockchain = True
+                        else:
+                            # Chưa có record blockchain status
+                            should_push_blockchain = True
+                
+                if should_push_blockchain:
+                    try:
+                        # CHECK BLOCKCHAIN trước xem date đã tồn tại chưa
+                        logger.info(f"⛓️  Checking blockchain for existing date {date_str}...")
+                        check_url = f"http://localhost:3000/api/getDailyInsightByDate?date={date_str}"
+                        
+                        try:
+                            with urllib.request.urlopen(check_url, timeout=10) as check_resp:
+                                existing_onchain = json_lib.loads(check_resp.read().decode("utf-8"))
+                                if existing_onchain and 'date' in existing_onchain:
+                                    logger.info(f"   ⏭️  Date {date_str} already exists on blockchain, skipping push")
+                                    should_push_blockchain = False
+                                    # Update DB để đánh dấu đã có trên blockchain
+                                    with get_db_conn() as conn:
+                                        with conn.cursor() as cur:
+                                            cur.execute("""
+                                                UPDATE daily_insights 
+                                                SET blockchain_status = 'confirmed',
+                                                    blockchain_tx_hash = 'existing',
+                                                    blockchain_pushed_at = NOW()
+                                                WHERE id = %s
+                                            """, (record_id,))
+                                            conn.commit()
+                        except urllib.error.HTTPError as e:
+                            if e.code == 404:
+                                # Chưa có trên blockchain, tiếp tục push
+                                logger.info(f"   ✅ Date not found on blockchain, proceeding with push")
+                            else:
+                                raise
+                        
+                        if should_push_blockchain:
+                            logger.info(f"⛓️  Pushing daily insight to blockchain...")
+                            
+                            # Call blockchain service (gateway's /api/pushDailyInsight endpoint)
+                            blockchain_url = "http://localhost:3000/api/pushDailyInsight"
+                            blockchain_payload = {
+                                "id": record_id,
+                                "date": date_str,
+                                "sampleCount": aggregated_data['sample_count'],
+                                "recommendedCrop": recommended_crop,
+                                "confidence": crop_confidence,
+                                "soilHealthScore": soil_score,
+                                "healthRating": soil_rating,
+                                "isAnomalyDetected": has_anomaly,
+                                "recommendations": recommendations_list
+                            }
+                            
+                            req = urllib.request.Request(
+                                blockchain_url,
+                                data=json_lib.dumps(blockchain_payload).encode("utf-8"),
+                                headers={"Content-Type": "application/json"},
+                                method="POST"
+                            )
+                            
+                            with urllib.request.urlopen(req, timeout=30) as resp:
+                                blockchain_response = json_lib.loads(resp.read().decode("utf-8"))
+                                blockchain_tx = blockchain_response.get('txHash')
+                            
+                            # Update daily_insights with blockchain info
+                            if blockchain_tx:
+                                with get_db_conn() as conn:
+                                    with conn.cursor() as cur:
+                                        cur.execute("""
+                                            UPDATE daily_insights 
+                                            SET blockchain_status = 'confirmed',
+                                                blockchain_tx_hash = %s,
+                                                blockchain_pushed_at = NOW()
+                                            WHERE id = %s
+                                        """, (blockchain_tx, record_id))
+                                        conn.commit()
+                                
+                                logger.info(f"   ✅ Blockchain TX: {blockchain_tx}")
+                            
+                    except Exception as bc_error:
+                        logger.error(f"⚠️ Blockchain push failed: {bc_error}")
+                        blockchain_tx = None
+                        
+                        # Update status to failed
+                        try:
+                            with get_db_conn() as conn:
+                                with conn.cursor() as cur:
+                                    cur.execute("""
+                                        UPDATE daily_insights 
+                                        SET blockchain_status = 'failed'
+                                        WHERE id = %s
+                                    """, (record_id,))
+                                    conn.commit()
+                        except:
+                            pass
+                
+            except Exception as save_error:
+                logger.error(f"⚠️ Failed to save daily insights: {save_error}", exc_info=True)
+        
+        return jsonify({
+            "status": "success",
+            "date": date_str,
+            "aggregated_data": aggregated_data,
+            "ai_analysis": ai_result,
+            "saved_to_db": record_id is not None,
+            "record_id": record_id,
+            "blockchain_tx": blockchain_tx,
+            "blockchain_status": "confirmed" if blockchain_tx else "failed"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Analyze daily insights error: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

@@ -323,25 +323,100 @@ app.get("/api/getDailyInsights", async (req, res) => {
 
 app.get("/api/getLatestDailyInsight", async (req, res) => {
   try {
-    const r = await contract.getLatestDailyInsight();
+    // Get ALL insights and find the one with latest date
+    const count = Number(await contract.getDailyInsightCount());
+
+    if (count === 0) {
+      return res.status(404).json({ error: "No daily insights available" });
+    }
+
+    let latestInsight = null;
+    let latestTimestamp = 0;
+
+    // Loop through all insights to find the latest by date
+    for (let i = 0; i < count; i++) {
+      const r = await contract.getDailyInsight(i);
+      const timestamp = Number(r.dateTimestamp);
+
+      if (timestamp > latestTimestamp) {
+        latestTimestamp = timestamp;
+        latestInsight = r;
+      }
+    }
+
+    if (!latestInsight) {
+      return res.status(404).json({ error: "No daily insights found" });
+    }
+
     const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
     let recommendations = [];
     try {
-      recommendations = JSON.parse(r.recommendations || "[]");
+      recommendations = JSON.parse(latestInsight.recommendations || "[]");
     } catch (e) { }
 
     const insight = {
-      date: formatEpochToVnString(Number(r.dateTimestamp)),
-      sampleCount: Number(r.sampleCount),
-      recommendedCrop: r.recommendedCrop,
-      confidence: Number(r.confidence) / 10000,
-      soilHealthScore: Number(r.soilHealthScore) / 10,
-      healthRating: ratingMap[r.healthRating] || "UNKNOWN",
-      isAnomalyDetected: r.isAnomalyDetected,
+      date: formatEpochToVnString(Number(latestInsight.dateTimestamp)),
+      sampleCount: Number(latestInsight.sampleCount),
+      recommendedCrop: latestInsight.recommendedCrop,
+      confidence: Number(latestInsight.confidence) / 10000,
+      soilHealthScore: Number(latestInsight.soilHealthScore) / 10,
+      healthRating: ratingMap[latestInsight.healthRating] || "UNKNOWN",
+      isAnomalyDetected: latestInsight.isAnomalyDetected,
       recommendations: recommendations,
-      reporter: r.reporter
+      reporter: latestInsight.reporter
     };
     res.json(insight);
+  } catch (err) {
+    res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
+app.get("/api/getDailyInsightByDate", async (req, res) => {
+  try {
+    const { date } = req.query; // Format: YYYY-MM-DD
+    if (!date) {
+      return res.status(400).json({ error: "Date parameter is required" });
+    }
+
+    // Parse date to epoch timestamp (start of day UTC+7)
+    const dateObj = new Date(date + "T00:00:00+07:00");
+    const targetTimestamp = Math.floor(dateObj.getTime() / 1000);
+
+    const count = Number(await contract.getDailyInsightCount());
+    if (count === 0) {
+      return res.status(404).json({ error: "No daily insights available" });
+    }
+
+    // Search for matching date
+    for (let i = 0; i < count; i++) {
+      const r = await contract.getDailyInsight(i);
+      const timestamp = Number(r.dateTimestamp);
+
+      // Check if same date (timestamps should match exactly)
+      if (timestamp === targetTimestamp) {
+        const ratingMap = ["POOR", "FAIR", "GOOD", "EXCELLENT"];
+        let recommendations = [];
+        try {
+          recommendations = JSON.parse(r.recommendations || "[]");
+        } catch (e) { }
+
+        const insight = {
+          date: formatEpochToVnString(timestamp),
+          sampleCount: Number(r.sampleCount),
+          recommendedCrop: r.recommendedCrop,
+          confidence: Number(r.confidence) / 10000,
+          soilHealthScore: Number(r.soilHealthScore) / 10,
+          healthRating: ratingMap[r.healthRating] || "UNKNOWN",
+          isAnomalyDetected: r.isAnomalyDetected,
+          recommendations: recommendations,
+          reporter: r.reporter
+        };
+        return res.json(insight);
+      }
+    }
+
+    // Date not found
+    res.status(404).json({ error: `No insight found for date ${date}` });
   } catch (err) {
     res.status(500).json({ error: err?.message || String(err) });
   }
