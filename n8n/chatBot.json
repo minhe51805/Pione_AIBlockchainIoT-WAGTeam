@@ -1,0 +1,1247 @@
+{
+  "name": "PioneDream",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16d97229-9076-4c88-bc06-76a52948c4b7",
+              "name": "full_name",
+              "value": "={{ $('Webhook_Zalo').item.json.body.message.from.display_name }}",
+              "type": "string"
+            },
+            {
+              "id": "dec8df0a-6acd-4469-bb28-866366672ef3",
+              "name": "id_chat",
+              "value": "={{ $('Webhook_Zalo').item.json.body.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "14640f4f-2d13-4811-8dda-62e4713a0627",
+              "name": "message",
+              "value": "={{ $json.body.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        640
+      ],
+      "id": "ee1d6deb-8acd-483d-ab15-335b78b0c8a0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        992
+      ],
+      "id": "d7fd1414-18cd-4f6e-ae0e-89bf3a371d40",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "triggerMode": "listenTrigger",
+        "channelName": "user_linked_event",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTrigger",
+      "typeVersion": 1,
+      "position": [
+        576,
+        1312
+      ],
+      "id": "ffab63af-5ec0-470b-b3da-12fa270102a9",
+      "name": "Postgres Trigger",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Xóa function cũ nếu có\nDROP FUNCTION IF EXISTS public.notify_user_linked_event();\n\n-- 1️⃣ Tạo function\nCREATE OR REPLACE FUNCTION public.notify_user_linked_event()\nRETURNS TRIGGER AS $$\nDECLARE\n  payload JSON;\nBEGIN\n  -- Chỉ kích hoạt khi user được liên kết thành công (có zalo_chat_id mới)\n  IF (TG_OP = 'UPDATE' AND NEW.zalo_chat_id IS NOT NULL AND OLD.zalo_chat_id IS DISTINCT FROM NEW.zalo_chat_id) THEN\n    payload := json_build_object(\n      'event', 'user_linked',\n      'user_id', NEW.id,\n      'full_name', NEW.full_name,\n      'wallet_address', NEW.wallet_address,\n      'zalo_chat_id', NEW.zalo_chat_id,\n      'linked_at', now()\n    );\n\n    -- Gửi thông báo qua kênh \"user_linked_event\"\n    PERFORM pg_notify('user_linked_event', payload::text);\n  END IF;\n\n  RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- 2️⃣ Xóa trigger cũ nếu có\nDROP TRIGGER IF EXISTS trg_user_linked_event ON public.users;\n\n-- 3️⃣ Tạo trigger mới gắn vào bảng users\nCREATE TRIGGER trg_user_linked_event\nAFTER UPDATE ON public.users\nFOR EACH ROW\nEXECUTE FUNCTION public.notify_user_linked_event();\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        560,
+        288
+      ],
+      "id": "38009d93-e757-4b92-a74a-3a1982ad4e12",
+      "name": "trigger user_contact_update",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Câu hỏi của người dùng:\n\"{{ $('Webhook_Zalo').item.json.body.message.text }}\"\nVới các thông người dùng:\nHọ Tên: {{ $('Webhook_Zalo').item.json.body.message.from.display_name }}\nId: {{ $json.id }}\nwallet_address: {{ $json.wallet_address }}",
+        "options": {
+          "systemMessage": "=🎯 Vai trò của bạn:\nBạn là **GAIA.VN AI Agent**, trợ lý nông nghiệp thông minh của nền tảng DApp GAIA.VN.  \nBạn có khả năng:\n1️⃣ Trả lời các câu hỏi lý thuyết, kỹ năng, và kiến thức nông nghiệp (đất, nước, cây trồng, dinh dưỡng, canh tác, môi trường, IoT, AI, blockchain,...).  \n2️⃣ Gọi công cụ **User Lookup** để tra cứu thông tin người dùng hiện tại (ví dụ: ví blockchain, ID thiết bị, vị trí canh tác, họ tên...).  \n3️⃣ Gọi công cụ **Data Query** để truy xuất dữ liệu cảm biến, phân tích AI, hoặc log blockchain của người dùng.  \n\n---\n\n### 🧩 Cách ra quyết định:\n\n**Nếu câu hỏi thuộc nhóm lý thuyết hoặc kiến thức chung**  \n→ Không cần dùng tool nào.  \n→ Trả lời trực tiếp bằng kiến thức của bạn (ngắn gọn, dễ hiểu, có ví dụ thực tế).\n\n**Nếu câu hỏi yêu cầu thông tin cá nhân hoặc dữ liệu người dùng**  \n(ví dụ: “Tôi là ai?”, “Ví của tôi là gì?”, “Thiết bị của tôi ID bao nhiêu?”)  \n→ Gọi **User Lookup Tool**.  \n→ Sau khi nhận kết quả, tóm tắt và trả lời thân thiện.  \n\n**Nếu câu hỏi liên quan đến dữ liệu thực tế**  \n(ví dụ: “Chất lượng nước hôm nay sao?”, “AI dự đoán cây trồng tôi thế nào?”,  \n“Dữ liệu IoT của tôi gần nhất là gì?”, “Dữ liệu đã lên blockchain chưa?”)  \n→ Gọi **Data Query Tool**.  \n→ Sau khi nhận dữ liệu, diễn giải ý nghĩa, cảnh báo nếu bất thường,  \nvà thêm nhận xét hoặc lời khuyên nông nghiệp phù hợp.\n\n---\n\n### 📘 Hướng dẫn trả lời:\n- Trả lời bằng **tiếng Việt tự nhiên**, thân thiện và dễ hiểu.  \n- Nếu dữ liệu có vấn đề (pH < 5.5, độ mặn > 1.0‰, AI score < 6) → đưa **cảnh báo nhẹ nhàng** và **hướng dẫn xử lý**.  \n- Nếu dữ liệu tốt → đưa lời khích lệ (“rất tốt”, “ổn định”, “duy trì như vậy nhé 🌿”).  \n- Thêm một ít icon cho tự nhiên và định dạng chữ thường không cần in đậm,ngang,...\n- Nếu không có dữ liệu, trả lời: “Hiện tại hệ thống chưa ghi nhận dữ liệu của bạn.”  \n- Nếu người dùng hỏi ngoài phạm vi (ví dụ chính trị, tôn giáo), hãy nói lịch sự: “Tôi chỉ hỗ trợ các vấn đề nông nghiệp và dữ liệu môi trường.”  \n\n---\n\n### ⚙️ Cấu trúc logic:\n\n1️⃣ Hiểu câu hỏi của người dùng  \n2️⃣ Quyết định: **Chat bình thường / Gọi User Lookup / Gọi Data Query**  \n3️⃣ Nếu gọi tool → đợi kết quả → phân tích → trả lời  \n4️⃣ Nếu không cần tool → trả lời trực tiếp  \n\n---\n\n### 🧠 Mục tiêu cuối:\nTạo trải nghiệm tự nhiên như một **chuyên gia nông nghiệp ảo**,  \nnhưng vẫn biết cách **truy xuất dữ liệu thật của người dùng** khi cần.  \nLuôn đảm bảo độ chính xác, rõ ràng và thân thiện.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2416,
+        256
+      ],
+      "id": "e7c0cc62-ec74-4f72-ba09-503e6d729d93",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        464
+      ],
+      "id": "6dfa59e4-6d8c-4e5b-9bfc-3f212294b5f7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Iv88COAz0eeDSz5C",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Trigger thông báo liên kết tài khoản zalo thành công\n",
+        "height": 304,
+        "width": 1296
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "696fce10-7674-49fc-ab3f-80e666e9a9a5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "chat-zalo",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        752
+      ],
+      "id": "bfe6cc8c-d75a-4ddb-a547-ef666be1cf27",
+      "name": "Webhook_Zalo",
+      "webhookId": "9703b97b-bbff-4c18-b50c-c457ea64ca90"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/setWebhook",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "http://36.50.135.18/webhook/chat-zalo"
+            },
+            {
+              "name": "secret_token",
+              "value": "ttadz123"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        304
+      ],
+      "id": "3a1a374b-9226-4745-bc33-8ce069592ab5",
+      "name": "SetWebHook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/deleteWebhook",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        304
+      ],
+      "id": "cf4f8894-0df9-4c9a-bbd8-ffa4f19f8287",
+      "name": "DeleteWebHook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT event_object_table, trigger_name, action_timing, event_manipulation, action_statement\nFROM information_schema.triggers\nWHERE event_object_table = 'users';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        304
+      ],
+      "id": "73563e17-1872-41be-8d1f-d8578f7f7031",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $('Lấy thông tin User').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2624,
+        496
+      ],
+      "id": "9f5ac789-9bae-41e0-8402-054ff3fedf93",
+      "name": "User Lookup",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "sensor_readings",
+          "mode": "list",
+          "cachedResultName": "sensor_readings"
+        },
+        "limit": 5,
+        "sort": {
+          "values": [
+            {
+              "column": "measured_at_vn",
+              "direction": "DESC"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2736,
+        464
+      ],
+      "id": "616317ca-730f-4c91-a19f-bc579e934852",
+      "name": "Data Query",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Trigger gửi báo cáo 20h hằng ngày \n",
+        "height": 448,
+        "width": 2144
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        1552
+      ],
+      "typeVersion": 1,
+      "id": "a466a9e2-99cd-49c1-a2e1-11af1da74c8c",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 20
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        1728
+      ],
+      "id": "cb28e256-0564-41e7-8593-9e41e808a9d8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=🌾 Bạn là trợ lý GAIA.VN AI nông nghiệp thông minh.\n\nDưới đây là dữ liệu trung bình cảm biến của ngày hôm nay:\n{{ JSON.stringify($json, null, 2) }}\n\n\nHãy viết một **bản báo cáo ngắn gọn, dễ hiểu (4–6 câu)** bằng tiếng Việt,\ndành cho người nông dân (không kỹ thuật, không liệt kê số liệu dạng bảng).\n\nYêu cầu:\n1️⃣ Mở đầu bằng ngày hôm nay (ví dụ: \"📅 Báo cáo ngày 4/11/2025:\") - nếu không có thì dữ liệu thì nói không tìm thấy dữ liệu nào....\n2️⃣ Tóm tắt tình hình:\n   - Nhiệt độ đất & không khí (mát, nóng, ổn định)\n   - Độ ẩm đất & không khí (đủ, thiếu, cao)\n   - pH đất (trung tính, chua, kiềm)\n   - Tình hình mưa hôm nay (nếu có)\n3️⃣ Đưa ra đánh giá tổng quan về **sức khỏe đất** và **môi trường trồng trọt** hôm nay.\n4️⃣ Nếu có dấu hiệu bất thường (ví dụ pH thấp, đất khô, nóng quá), hãy thêm cảnh báo ngắn.\n5️⃣ Thêm **gợi ý cho ngày mai**: \n   - Nên làm gì (tưới thêm, kiểm tra pH, nghỉ tưới, bón phân nhẹ, v.v.)\n6️⃣ Kết thúc bằng lời khích lệ tích cực, ví dụ:\n   “Cảm ơn bạn đã đồng hành cùng hệ thống AI Nông Nghiệp Thông Minh 🌱.”\n\nViết thành tự nhiên, thân thiện, và truyền cảm hứng.\nKhông cần hiển thị số cụ thể, hãy diễn đạt cảm nhận tổng quát.\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        1728
+      ],
+      "id": "40b2b498-47cc-471c-9d0c-b45018d183e3",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Iv88COAz0eeDSz5C",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1648,
+        1680
+      ],
+      "id": "497c53fb-fa92-4b15-8c28-03a30611eacd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        1808
+      ],
+      "id": "81c095cb-0390-4ae6-aba4-f8ffeba65522"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        1568
+      ],
+      "id": "718f4c6c-1af8-4370-a192-c3b601bcfdd8",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.zalo_chat_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        2464,
+        480
+      ],
+      "id": "252e82fd-0b8d-49d5-84ab-48b828bb84cc",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Chat",
+        "height": 480,
+        "width": 1184,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2176,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "fc21c267-aa19-45cb-b40c-cce650eeabe2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Liên Kết",
+        "height": 512,
+        "width": 1184,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2176,
+        784
+      ],
+      "typeVersion": 1,
+      "id": "04ee4854-33a4-4e39-858e-a4ab0d7543ae",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/sendChatAction",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.body.message.chat.id }}"
+            },
+            {
+              "name": "action",
+              "value": "typing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        832,
+        768
+      ],
+      "id": "35a7c463-8e68-4a10-b3a2-7c6de12c7723",
+      "name": "sendChatAction"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c082f5ab-4ca8-4c0c-bf2e-b137ce7eee9a",
+              "leftValue": "={{ $json.body.message.message_type }}",
+              "rightValue": "PRIVATE",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        736
+      ],
+      "id": "5aff1ff2-6ed8-4ad4-ba5b-2fc0d91e3aef",
+      "name": "Kiểm tra input"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    id,\n    full_name,\n    email,\n    wallet_address,\n    zalo_chat_id,\n    'Found user' AS result\nFROM public.users\nWHERE zalo_chat_id = '{{ $json.id_chat }}'\n\nUNION ALL\n\nSELECT \n    NULL AS id,\n    NULL AS full_name,\n    NULL AS email,\n    NULL AS wallet_address,\n    'null' AS zalo_chat_id,\n    'No user found' AS result\nWHERE NOT EXISTS (\n    SELECT 1 FROM public.users WHERE zalo_chat_id = '{{ $json.id_chat }}'\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1664,
+        704
+      ],
+      "id": "3078a701-a5f1-452d-82ce-1dfc86f9bfa4",
+      "name": "Lấy thông tin User",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fb587806-ad80-43c9-8bc4-b82e81d13cae",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "Found user",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1936,
+        688
+      ],
+      "id": "58220294-0701-4576-b951-9cd22729fdf8",
+      "name": "Kiểm tra user liên kết tài khoản"
+    },
+    {
+      "parameters": {
+        "content": "## Zalo chatbot",
+        "height": 608,
+        "width": 1648,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        496,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "e82504b6-1ab6-4104-ac92-2e60d0216232",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "zalo_link_sessions",
+          "mode": "list",
+          "cachedResultName": "zalo_link_sessions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "token": "={{ $json.token }}",
+            "user_id": 0,
+            "zalo_id": "={{ $json.zalo_id }}",
+            "expires_at": "={{ $json.expiresAt }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "zalo_id",
+              "displayName": "zalo_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "token",
+              "displayName": "token",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "is_used",
+              "displayName": "is_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2704,
+        1008
+      ],
+      "id": "7c654c8f-4b10-4703-8501-2a9f0ca35e32",
+      "name": "Tạo token session",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "encodingType": "base64"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        2272,
+        992
+      ],
+      "id": "1e6d135e-5fcf-466b-866c-b4fad0ab149d",
+      "name": "Tạo Token"
+    },
+    {
+      "parameters": {
+        "jsCode": "const zalo_id = $('Edit Fields').first().json.id_chat;\nconst token = $input.first().json.data; \nconst expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();\n\nreturn [{ json: { token, zalo_id, expiresAt } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        1024
+      ],
+      "id": "2f63bc27-54e2-4368-b733-29b8389c3f4e",
+      "name": "Xử lý dữ liệu"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = {\n  recipient: {\n    id: $input.first().json.zalo_id\n  },\n  message: {\n    text:\n      \"🌾 Xin chào \" + $('Edit Fields').first().json.full_name + \" !\\n\\n\" +\n      \"Để hoàn tất xác minh và liên kết tài khoản của bạn với hệ thống, vui lòng bấm vào liên kết dưới đây:\\n\\n\" +\n      \"🔗 \" + \"https://163-61-183-90.nip.io/linkaccount?token=\" + $input.first().json.token + \"\\n\\n\" +\n      \"⏰ Lưu ý: Liên kết này chỉ có hiệu lực trong 5 phút để đảm bảo an toàn. Sau thời gian này, bạn cần yêu cầu liên kết lại.\\n\\n\" +\n      \"Cảm ơn bạn đã tin tưởng và sử dụng hệ thống của chúng tôi 💚\"\n  }\n};\n\nreturn [{ data: body }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        992
+      ],
+      "id": "6fc36f48-9e4c-4f09-a0f4-ebb32441922e",
+      "name": "Tạo tin nhắn liên kết"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=chat_id",
+              "value": "={{ $('Kiểm tra user liên kết tài khoản').item.json.zalo_chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3168,
+        288
+      ],
+      "id": "39fef5b2-22ef-452d-a031-fedf3c15705a",
+      "name": "sendMessage_Chat"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.data.recipient.id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.data.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3184,
+        1008
+      ],
+      "id": "e47bf10c-7f8d-4b6b-83d1-9028e2aa347b",
+      "name": "sendMessage_Link"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy dữ liệu từ payload của trigger\nconst data = $json.payload || $json;\n\n// Format giờ Việt Nam (nếu cần dùng)\nconst date = new Date(data.linked_at);\nconst linkedAtVN = date.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });\n\n// Tin nhắn chào mừng\nconst message = `\n🌾 *Xin chào ${data.full_name}!*\n\n🎉 Bạn đã *liên kết thành công* tài khoản với hệ thống *AI Nông Nghiệp Thông Minh*.\n\nTừ bây giờ, bạn có thể:\n- 📊 Theo dõi dữ liệu IoT từ cảm biến đất, nhiệt độ, độ ẩm, mưa...\n- 🤖 Nhận phân tích và khuyến nghị từ AI giúp cải thiện năng suất cây trồng.\n- 🔗 Lưu trữ dữ liệu minh bạch trên *Zero Blockchain* — đảm bảo an toàn và không thể bị sửa đổi.\n- 📱 Truy cập trực tiếp DApp để xem biểu đồ, dự báo và tư vấn canh tác.\n\nCảm ơn bạn đã tin tưởng đồng hành cùng chúng tôi!  \n💚 Chúc bạn một mùa vụ bội thu và canh tác hiệu quả cùng công nghệ 🌱\n`;\n\n// Trả output cho node kế tiếp (gửi Zalo, Telegram, Discord,...)\nreturn [{\n  json: {\n    message,\n    full_name: data.full_name,\n    linked_at: linkedAtVN\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        1344
+      ],
+      "id": "c260886f-d78f-48cf-b91b-824e06768e54",
+      "name": "Tạo tin nhắn liên kết thành công"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Postgres Trigger').item.json.payload.zalo_chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        1280
+      ],
+      "id": "4aa616f6-b0d0-4a9c-b7db-39eb916c85a9",
+      "name": "sendMessage_linksuccess"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://163-61-183-90.nip.io/api/ai/analyze-daily-insights",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        1776
+      ],
+      "id": "e79d53a3-9ac6-4835-bc97-5dffaea493f6",
+      "name": "Analyze_Daily_Insights"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "zalo_chat_id",
+              "condition": "IS NOT NULL"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "full_name",
+            "farm_name",
+            "email",
+            "zalo_chat_id"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1408,
+        1696
+      ],
+      "id": "9e677fde-0fe3-4d37-b3f6-3086a24c2dfd",
+      "name": "Lấy zalo id",
+      "credentials": {
+        "postgres": {
+          "id": "oGAHbg48Bsrkta9A",
+          "name": "PieoneDream"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bot-api.zapps.me/bot2636990041745555077:sIBMRsWMvGYeFkBOgbNBuFglputEIxZtlVdRIeByFyZDfpFmaduLvoWPTpmMFcxT/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.zalo_chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Message a model').item.json.content.parts[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1984,
+        1760
+      ],
+      "id": "a374dd52-7165-4883-a159-816af7d914c3",
+      "name": "sendMessage_report",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Lấy thông tin User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Trigger": {
+      "main": [
+        [
+          {
+            "node": "Tạo tin nhắn liên kết thành công",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "sendMessage_Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook_Zalo": {
+      "main": [
+        [
+          {
+            "node": "sendChatAction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "trigger user_contact_update": {
+      "main": [
+        []
+      ]
+    },
+    "User Lookup": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Query": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Analyze_Daily_Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Lấy zalo id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "sendMessage_report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendChatAction": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra input": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy thông tin User": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra user liên kết tài khoản",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra user liên kết tài khoản": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tạo Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo token session": {
+      "main": [
+        [
+          {
+            "node": "Tạo tin nhắn liên kết",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo Token": {
+      "main": [
+        [
+          {
+            "node": "Xử lý dữ liệu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xử lý dữ liệu": {
+      "main": [
+        [
+          {
+            "node": "Tạo token session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo tin nhắn liên kết": {
+      "main": [
+        [
+          {
+            "node": "sendMessage_Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo tin nhắn liên kết thành công": {
+      "main": [
+        [
+          {
+            "node": "sendMessage_linksuccess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze_Daily_Insights": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy zalo id": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendMessage_report": {
+      "main": [
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "1UGVnWBRTYUpHbXy"
+  },
+  "versionId": "4b08c0ac-1481-4424-963d-2bb6ad53c984",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4ba99ef3aa2bc0b02c1798cad539a452ee8bd906dbca461afb9fd7ea8f6f3a04"
+  },
+  "id": "1UGVnWBRTYUpHbXy",
+  "tags": []
+}
