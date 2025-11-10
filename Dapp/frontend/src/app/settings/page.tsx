@@ -24,7 +24,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const savedUser = storage.get<User>(StorageKeys.USER);
     const savedAuthMethod = storage.get<string>(StorageKeys.AUTH_METHOD) || 'unknown';
-    
+
     if (!savedUser) {
       router.push('/auth/login');
       return;
@@ -70,8 +70,8 @@ export default function SettingsPage() {
       const result = await response.json();
       if (!result.success) throw new Error(result.error || 'Update failed');
 
-      const updatedUser: User = { 
-        ...user, 
+      const updatedUser: User = {
+        ...user,
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
@@ -79,7 +79,7 @@ export default function SettingsPage() {
         farm_area_hectares: formData.farm_area_hectares ? parseFloat(formData.farm_area_hectares) : user.farm_area_hectares,
         current_crop: formData.current_crop
       };
-      
+
       storage.set(StorageKeys.USER, updatedUser);
       setUser(updatedUser);
       setSuccess('✓ Saved successfully!');
@@ -208,22 +208,22 @@ export default function SettingsPage() {
             <div className="lg:col-span-1">
               <div className="space-y-2 lg:sticky lg:top-24">
                 {[
-                  { 
-                    id: 'profile', 
+                  {
+                    id: 'profile',
                     label: 'Profile',
                     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   },
-                  { 
-                    id: 'security', 
+                  {
+                    id: 'security',
                     label: 'Security',
                     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   },
-                  { 
-                    id: 'support', 
+                  {
+                    id: 'support',
                     label: 'Support',
                     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -233,11 +233,10 @@ export default function SettingsPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all text-sm font-medium flex items-center gap-3 border ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700 shadow-lg shadow-violet-500/20'
-                        : 'text-gray-600 dark:text-gray-400 bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50'
-                    }`}
+                    className={`w-full text-left px-4 py-3 rounded-xl transition-all text-sm font-medium flex items-center gap-3 border ${activeTab === tab.id
+                      ? 'bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700 shadow-lg shadow-violet-500/20'
+                      : 'text-gray-600 dark:text-gray-400 bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50'
+                      }`}
                   >
                     {tab.icon}
                     {tab.label}
@@ -400,7 +399,7 @@ export default function SettingsPage() {
                         </svg>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white">Authentication</h3>
                       </div>
-                      
+
                       <div className="p-5 border-2 rounded-2xl mb-6 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 border-violet-300 dark:border-violet-700">
                         <p className="text-sm mb-3 text-gray-600 dark:text-gray-400">Current method:</p>
                         <div className="flex items-center gap-3">
@@ -520,7 +519,7 @@ export default function SettingsPage() {
                           <div className="flex items-center gap-4">
                             <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-violet-600 to-purple-600">
                               <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.912 1.456 5.51 3.732 7.197V22l3.562-1.955c.95.263 1.958.405 3.006.405 5.523 0 10-4.145 10-9.243S17.523 2 12 2zm.993 12.416l-2.558-2.732-4.996 2.732 5.493-5.832 2.623 2.732 4.932-2.732-5.494 5.832z"/>
+                                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.912 1.456 5.51 3.732 7.197V22l3.562-1.955c.95.263 1.958.405 3.006.405 5.523 0 10-4.145 10-9.243S17.523 2 12 2zm.993 12.416l-2.558-2.732-4.996 2.732 5.493-5.832 2.623 2.732 4.932-2.732-5.494 5.832z" />
                               </svg>
                             </div>
                             <div className="flex-1">
@@ -535,7 +534,7 @@ export default function SettingsPage() {
                       </a>
 
                       <a
-                        href="https://zalo.me/YOUR_ID"
+                        href="https://zalo.me/1133694661433261701"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block group"
@@ -544,8 +543,8 @@ export default function SettingsPage() {
                           <div className="flex items-center gap-4">
                             <div className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-violet-600 to-purple-600">
                               <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.912 1.456 5.51 3.732 7.197V22l3.562-1.955c.95.263 1.958.405 3.006.405 5.523 0 10-4.145 10-9.243S17.523 2 12 2z"/>
-                                <path d="M10.5 14h3v1h-3v-1zm0-3h3v1h-3v-1zm0-3h3v1h-3V8z" fill="white"/>
+                                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.912 1.456 5.51 3.732 7.197V22l3.562-1.955c.95.263 1.958.405 3.006.405 5.523 0 10-4.145 10-9.243S17.523 2 12 2z" />
+                                <path d="M10.5 14h3v1h-3v-1zm0-3h3v1h-3v-1zm0-3h3v1h-3V8z" fill="white" />
                               </svg>
                             </div>
                             <div className="flex-1">
@@ -565,10 +564,9 @@ export default function SettingsPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Available: <span className="font-semibold text-violet-600 dark:text-violet-400">8:00 - 22:00</span>
+                            Available: <span className="font-semibold text-violet-600 dark:text-violet-400">24/7</span>
                           </p>
                         </div>
-                        <p className="text-xs mt-2 text-center text-gray-500 dark:text-gray-500">Monday - Sunday</p>
                       </div>
                     </div>
                   </div>

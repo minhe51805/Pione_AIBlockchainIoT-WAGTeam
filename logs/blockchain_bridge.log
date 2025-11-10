@@ -1,0 +1,3 @@
+[dotenv@17.2.3] injecting env (12) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+ CONTRACT_ADDRESS: 0x7b583EafBB3cea27a8DC525c85E6a173173Ee5E0
+API server running at http://localhost:3000

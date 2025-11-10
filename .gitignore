@@ -1,1 +1,8 @@
+# Next.js / Webpack build cache
+.next/
+.cache/
+dist/
+out/
+build/
+*.pack.gz
 node_modules

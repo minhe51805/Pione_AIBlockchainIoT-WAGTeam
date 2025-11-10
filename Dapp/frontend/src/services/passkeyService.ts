@@ -1,73 +1,89 @@
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
-import type {
-  PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON,
-} from '@simplewebauthn/browser';
 
-const RP_ID = process.env.NEXT_PUBLIC_RP_ID || 'localhost';
+// RP_ID must match the hostname (without port or protocol)
+// For IP addresses, use the IP directly
+const RP_ID = process.env.NEXT_PUBLIC_RP_ID || 
+  (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
 const RP_NAME = process.env.NEXT_PUBLIC_RP_NAME || 'AgroTwin';
 
 /**
- * Generate registration options for WebAuthn
+ * UTF-8 safe base64 encoding (supports Vietnamese characters)
  */
-export function generateRegistrationOptions(username: string): PublicKeyCredentialCreationOptionsJSON {
-  const userId = new Uint8Array(16);
-  crypto.getRandomValues(userId);
-  const userIdBase64 = btoa(String.fromCharCode(...userId));
+function utf8ToBase64(str: string): string {
+  try {
+    // Use TextEncoder for proper UTF-8 encoding
+    const utf8Bytes = new TextEncoder().encode(str);
+    // Convert to binary string
+    const binaryString = String.fromCharCode(...utf8Bytes);
+    // Encode to base64
+    return btoa(binaryString);
+  } catch (e) {
+    // Fallback: use crypto.randomUUID() if encoding fails
+    console.warn('UTF-8 encoding failed, using random ID instead');
+    return btoa(crypto.randomUUID());
+  }
+}
+
+/**
+ * Passkey Registration Flow
+ */
+function generateRegistrationOptions(username: string) {
+  const challenge = new Uint8Array(32);
+  crypto.getRandomValues(challenge);
+  
+  const challengeBase64 = btoa(String.fromCharCode(...challenge));
 
   return {
-    challenge: generateChallenge(),
+    challenge: challengeBase64,
     rp: {
       name: RP_NAME,
       id: RP_ID,
     },
     user: {
-      id: userIdBase64,
+      id: utf8ToBase64(username), // ✅ Now supports Vietnamese characters!
       name: username,
       displayName: username,
     },
     pubKeyCredParams: [
-      { type: 'public-key', alg: -7 },  // ES256
-      { type: 'public-key', alg: -257 }, // RS256
+      { alg: -7, type: 'public-key' as const },
+      { alg: -257, type: 'public-key' as const },
     ],
+    timeout: 60000,
+    attestation: 'none' as const,
     authenticatorSelection: {
-      authenticatorAttachment: 'platform',
-      userVerification: 'required',
-      residentKey: 'required',
+      // Don't require platform authenticator - allow both platform and cross-platform
+      // authenticatorAttachment: 'platform' as const,
+      requireResidentKey: false,
+      residentKey: 'preferred' as const,
+      userVerification: 'preferred' as const,
     },
-    timeout: 60000,
-    attestation: 'none',
+    excludeCredentials: [],
   };
 }
 
-/**
- * Generate authentication options for WebAuthn
- */
-export function generateAuthenticationOptions(): PublicKeyCredentialRequestOptionsJSON {
-  return {
-    challenge: generateChallenge(),
-    rpId: RP_ID,
-    userVerification: 'required',
-    timeout: 60000,
-  };
-}
-
-/**
- * Register a new Passkey
- */
 export async function registerPasskey(username: string) {
   try {
+    console.log('🔐 Starting Passkey registration for:', username);
+    console.log('🌐 Current origin:', window.location.origin);
+    console.log('🆔 RP_ID:', RP_ID);
+    
     const options = generateRegistrationOptions(username);
-    const credential = await startRegistration(options);
+    console.log('⚙️ Registration options:', JSON.stringify(options, null, 2));
+    
+    const credential = await startRegistration(options as any);
+    console.log('✅ Credential received:', credential.id);
     
     return {
       success: true,
-      credential,
       credentialId: credential.id,
-      publicKey: credential.response.publicKey,
+      publicKey: credential.response.publicKey || btoa(JSON.stringify(credential.response)),
+      transports: credential.response.transports,
     };
   } catch (error: any) {
-    console.error('Passkey registration failed:', error);
+    console.error('❌ Passkey registration failed:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return {
       success: false,
       error: error.message || 'Registration failed',
@@ -76,17 +92,34 @@ export async function registerPasskey(username: string) {
 }
 
 /**
- * Authenticate with Passkey
+ * Passkey Authentication Flow
  */
+function generateAuthenticationOptions() {
+  const challenge = new Uint8Array(32);
+  crypto.getRandomValues(challenge);
+  
+  const challengeBase64 = btoa(String.fromCharCode(...challenge));
+  
+  return {
+    challenge: challengeBase64,
+    rpId: RP_ID,
+    timeout: 60000,
+    userVerification: 'preferred' as const,
+    allowCredentials: [],
+  };
+}
+
 export async function authenticatePasskey() {
   try {
     const options = generateAuthenticationOptions();
-    const credential = await startAuthentication(options);
+    const credential = await startAuthentication(options as any);
     
     return {
       success: true,
-      credential,
       credentialId: credential.id,
+      authenticatorData: credential.response.authenticatorData,
+      clientDataJSON: credential.response.clientDataJSON,
+      signature: credential.response.signature,
     };
   } catch (error: any) {
     console.error('Passkey authentication failed:', error);
@@ -98,51 +131,27 @@ export async function authenticatePasskey() {
 }
 
 /**
- * Generate a random challenge (base64url encoded)
- */
-function generateChallenge(): string {
-  const challenge = new Uint8Array(32);
-  crypto.getRandomValues(challenge);
-  return btoa(String.fromCharCode(...challenge))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
-/**
- * Check if WebAuthn is supported
- */
-export function isWebAuthnSupported(): boolean {
-  return typeof window !== 'undefined' && 
-         window.PublicKeyCredential !== undefined &&
-         typeof window.PublicKeyCredential === 'function';
-}
-
-/**
  * Check if platform authenticator is available
  */
 export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
-  if (typeof window === 'undefined' || !window.PublicKeyCredential) {
-    return false;
-  }
-  
   try {
-    return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (!window.PublicKeyCredential) {
+      return false;
+    }
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   } catch (error) {
-    console.error('Error checking platform authenticator:', error);
+    console.error('Failed to check platform authenticator:', error);
     return false;
   }
 }
 
-/**
- * Export as object for easier import
- */
+// Default export for backward compatibility
 export const passkeyService = {
   registerPasskey,
+  register: registerPasskey, // Alias for backward compatibility
   authenticatePasskey,
-  isWebAuthnSupported,
+  authenticate: authenticatePasskey, // Alias for backward compatibility
   isPlatformAuthenticatorAvailable,
-  authenticate: authenticatePasskey,
-  register: registerPasskey,
 };
 
+export default passkeyService;

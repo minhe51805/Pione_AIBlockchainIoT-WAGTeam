@@ -33,7 +33,7 @@ export default function SoilDashboard() {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:5000/api/analyze-date', {
+      const response = await fetch('/api/analyze-date', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: selectedDate })
@@ -59,7 +59,7 @@ export default function SoilDashboard() {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:8000/api/ai/analyze-daily', {
+      const response = await fetch('/api/ai/analyze-daily', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: selectedDate })

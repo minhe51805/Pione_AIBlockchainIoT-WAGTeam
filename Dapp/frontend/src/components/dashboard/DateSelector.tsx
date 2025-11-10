@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+// Use relative paths - Gateway will proxy to backend
 const API_URL = '';
 const AI_API_URL = '';
 
@@ -105,7 +106,16 @@ const CustomHeader = ({
   );
 };
 
-export default function DateSelector() {
+interface DateSelectorProps {
+  onAnalysisComplete?: (analysisData: {
+    crop: string;
+    health: number;
+    anomaly: boolean;
+    fullData: any;
+  }) => void;
+}
+
+export default function DateSelector({ onAnalysisComplete }: DateSelectorProps = {}) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2025-10-28'));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -137,10 +147,11 @@ export default function DateSelector() {
     setResult(null);
     
     try {
-      const response = await fetch(`${API_URL}/api/analyze-date`, {
+      // Nút "Analyze": Phân tích MẪU MỚI NHẤT + Lưu vào ai_analysis + Push blockchain
+      const response = await fetch(`${API_URL}/api/ai/analyze-and-save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: formatDateForAPI(selectedDate) })
+        body: JSON.stringify({}) // No date param - always uses latest sample
       });
 
       const data = await response.json();
@@ -151,6 +162,30 @@ export default function DateSelector() {
       }
 
       setResult({ type: 'analyze', data });
+      
+      // 🤖 Trigger chatbot with analysis result (for "Analyze" button)
+      if (onAnalysisComplete && data.ai_analysis) {
+        const crop = data.ai_analysis?.crop_recommendation?.best_crop || 
+                     data.ai_analysis?.recommended_crop || 'N/A';
+        const health = Math.round(data.ai_analysis?.soil_health?.overall_score || 
+                                  data.ai_analysis?.soil_health_score || 0);
+        const anomaly = data.ai_analysis?.anomaly_detection?.is_anomaly || 
+                       data.ai_analysis?.has_anomaly || false;
+        
+        onAnalysisComplete({
+          crop,
+          health,
+          anomaly,
+          fullData: data
+        });
+      }
+      
+      // Show success message with blockchain TX and measured time
+      if (data.saved_to_db) {
+        setTimeout(() => {
+          setError(`✅ Latest sample analyzed! Time: ${data.measured_at || 'N/A'} | Saved ID: ${data.record_id || 'N/A'} | Blockchain: ${data.blockchain_tx?.substring(0, 20) || 'pending'}...`);
+        }, 100);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to analyze data');
     } finally {
@@ -162,9 +197,10 @@ export default function DateSelector() {
     setLoading(true);
     setError(null);
     setResult(null);
-    
+
     try {
-      const response = await fetch(`${AI_API_URL}/api/ai/analyze-daily`, {
+      // Nút "Analyze Daily": PHÂN TÍCH + LƯU VÀO daily_insights + PUSH BLOCKCHAIN
+      const response = await fetch(`${API_URL}/api/ai/analyze-daily-insights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: formatDateForAPI(selectedDate) })
@@ -178,11 +214,22 @@ export default function DateSelector() {
       }
 
       setResult({ type: 'pipeline', data });
-      
-      if (data.blockchain_tx) {
-        setTimeout(() => {
-          setError(`✅ Pipeline complete! TX: ${data.blockchain_tx.substring(0, 20)}... Status: ${data.blockchain_status}`);
-        }, 100);
+
+      // ✅ Show success message
+      setError(`✅ Daily analysis saved! Record ID: ${data.record_id || 'N/A'}`);
+
+      // 🤖 Trigger chatbot with analysis result
+      if (onAnalysisComplete && data.ai_analysis) {
+        const crop = data.ai_analysis?.crop_recommendation?.best_crop || 'N/A';
+        const health = Math.round(data.ai_analysis?.soil_health?.overall_score || 0);
+        const anomaly = data.ai_analysis?.anomaly_detection?.is_anomaly || false;
+
+        onAnalysisComplete({
+          crop,
+          health,
+          anomaly,
+          fullData: data
+        });
       }
     } catch (err: any) {
       setError(err.message || 'Failed to run pipeline');
@@ -305,27 +352,24 @@ export default function DateSelector() {
               </div>
               
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg border border-gray-200 dark:border-violet-800 bg-white/80 dark:bg-slate-900/80">
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-violet-800 bg-white/80 dark:bg-slate-900/80 min-w-0">
                 <p className="text-[10px] mb-1 text-slate-600 dark:text-slate-400">Crop</p>
-                <p className="text-base font-black capitalize text-emerald-600 dark:text-emerald-400">
-                    {result.data.ai_analysis?.crop_recommendation?.best_crop || 
-                     result.data.crop_recommendation?.best_crop || 'N/A'}
+                <p className="text-sm font-bold capitalize text-emerald-600 dark:text-emerald-400 break-words">
+                    {result.data.ai_analysis?.crop_recommendation?.best_crop || result.data.ai_analysis?.recommended_crop || 'N/A'}
                   </p>
                 </div>
                 
               <div className="p-3 rounded-lg border border-gray-200 dark:border-violet-800 bg-white/80 dark:bg-slate-900/80">
                 <p className="text-[10px] mb-1 text-slate-600 dark:text-slate-400">Health</p>
-                <p className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                    {Math.round(result.data.ai_analysis?.soil_health?.overall_score || 
-                     result.data.soil_health?.score || 0)}/100
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    {Math.round(result.data.ai_analysis?.soil_health?.overall_score || result.data.ai_analysis?.soil_health?.score || 0)}/100
                   </p>
               </div>
                 
               <div className="p-3 rounded-lg border border-gray-200 dark:border-violet-800 bg-white/80 dark:bg-slate-900/80">
                 <p className="text-[10px] mb-1 text-slate-600 dark:text-slate-400">Anomaly</p>
-                <p className="text-base font-black">
-                    {(result.data.ai_analysis?.anomaly_detection?.is_anomaly || 
-                      result.data.is_anomaly_detected) ? (
+                <p className="text-sm font-bold">
+                    {(result.data.ai_analysis?.anomaly_detection?.is_anomaly || result.data.ai_analysis?.has_anomaly) ? (
                     <span className="text-red-600 dark:text-red-400">Yes</span>
                     ) : (
                     <span className="text-emerald-600 dark:text-emerald-400">No</span>
@@ -353,31 +397,7 @@ export default function DateSelector() {
           </div>
         )}
 
-        {/* Info Box - Simple */}
-        <div className="mt-4 p-3 border border-[#a855f7]/30 dark:border-[#a855f7]/50 rounded-xl bg-purple-50/80 dark:bg-purple-950/80">
-          <div className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-[#a855f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              <div className="flex-1">
-              <p className="text-xs font-bold mb-2 text-[#a855f7]">Quick Actions</p>
-              <ul className="space-y-1.5 text-[10px] font-semibold text-gray-600 dark:text-gray-400">
-                <li className="flex items-center gap-1.5">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  <span><strong className="text-blue-600 dark:text-blue-400">Analyze:</strong> Quick view</span>
-                  </li>
-                <li className="flex items-center gap-1.5">
-                  <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  <span><strong className="text-emerald-600 dark:text-emerald-400">Analyze Daily:</strong> Full AI + Blockchain</span>
-                  </li>
-          </ul>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

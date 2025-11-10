@@ -2,15 +2,15 @@ const hre = require("hardhat");
 const fs = require("fs");
 
 async function main() {
-  console.log("🚀 Deploying AquaMindData contract...");
+  console.log("🚀 Deploying AgroTwinData contract...");
 
-  const AquaMindData = await hre.ethers.getContractFactory("AquaMindData");
-  const contract = await AquaMindData.deploy();
+  const AgroTwinData = await hre.ethers.getContractFactory("AgroTwinData");
+  const contract = await AgroTwinData.deploy();
 
   await contract.waitForDeployment();
   const address = await contract.getAddress();
 
-  console.log("✅ AquaMindData deployed to:", address);
+  console.log("✅ AgroTwinData deployed to:", address);
 
   // Save deployment info
   const deploymentInfo = {
