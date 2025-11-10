@@ -328,14 +328,4 @@ MIT License - see LICENSE file for details
 
 ---
 
-## 📞 Support
-
-**WAG Team - Pione AI-Blockchain-IoT Project**
-
-- 📧 Email: support@pione.io
-- 🌐 Website: https://pione.io
-- 🐙 GitHub: https://github.com/WAGTeam
-
----
-
 **Version:** 2.0.0 | **Last Updated:** November 2025
