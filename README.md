@@ -1,1079 +1,331 @@
-<div align="center">
+# 🌱 Pione AI-Blockchain-IoT Platform
 
-# 🌱 **GAIA.VN**
+> **Intelligent Agricultural IoT System with AI Analysis & Blockchain Verification**
 
-### **Global Agro Intelligence Architecture – Vietnam**
-
-#### AI • Blockchain • IoT • Smart Agriculture Platform
-
-![Version](https://img.shields.io/badge/Version-1.0.0-2ecc71.svg)
-![License](https://img.shields.io/badge/License-MIT-27ae60.svg)
-![Node](https://img.shields.io/badge/Node-%3E%3D18-3498db.svg)
-![Python](https://img.shields.io/badge/Python-%3E%3D3.8-9b59b6.svg)
-
-GAIA.VN là nền tảng nông nghiệp thông minh tích hợp IoT, AI và Blockchain,  
-xây dựng hệ sinh thái dữ liệu nông nghiệp **minh bạch – chính xác – thời gian thực** cho Việt Nam.
-
-Hệ thống kết nối **ESP32 + cảm biến môi trường 7-trong-1**, pipeline AI và Smart Contract trên **Zero Network**,  
-tạo nên một kiến trúc dữ liệu nông nghiệp thống nhất, phục vụ dự báo – phân tích – truy xuất nguồn gốc.
-
-</div>
+A comprehensive smart farming platform combining IoT sensor data collection, AI-powered analysis, and blockchain-based data verification for sustainable agriculture.
 
 ---
 
-## 🔧 Kiến trúc hệ thống
+## 📋 Quick Links
 
-## 📋 Mục lục
-
-```
-
-- [Giới thiệu](#-giới-thiệu)IoT Device (ESP8266/ESP32)
-
-- [Tính năng chính](#-tính-năng-chính)   │ POST 11 thông số
-
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)   ↓
-
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)Flask API (app_ingest.py) - Port 5000
-
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)   │ Validate & lưu PostgreSQL
-
-- [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)   │ Callback Node.js bridge
-
-- [Cấu hình](#-cấu-hình)   ↓
-
-- [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)PostgreSQL (36.50.134.107:6000)
-
-- [API Documentation](#-api-documentation)   │ Queue pending records
-
-- [Smart Contract](#-smart-contract)   ↓
-
-- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)Node.js Bridge (server.js) - Port 3000
-
-- [Đóng góp](#-đóng-góp)   │ Claim & đẩy lên blockchain
-
-- [License](#-license)   ↓
-
-- [Liên hệ](#-liên-hệ)Smart Contract (SoilDataStore.sol)
-
-   │ Lưu vĩnh viễn trên Zeroscan
-
----   └─→ https://zeroscan.org
-
-```
-
-## 🎯 Giới thiệu
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running Services](#running-services)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [Deployment](#deployment)
 
 ---
 
-**GAIA.VN** là một hệ thống giám sát nông nghiệp thông minh toàn diện, kết hợp công nghệ IoT, AI và Blockchain để cung cấp giải pháp quản lý đất đai và cây trồng hiệu quả cho nông dân.
+## 📖 Overview
 
-## 📦 11 Thông số thu thập
+**Pione AI-Blockchain-IoT** is an end-to-end agricultural intelligence platform that:
 
-### Vấn đề giải quyết:
+- **Collects** 11 soil & weather parameters from IoT sensors (ESP8266/ESP32)
+- **Analyzes** data using 4 ML models + Google Gemini AI (LLM WITH FACT mode)
+- **Stores** immutable records on Zeroscan blockchain
+- **Provides** real-time dashboard with crop recommendations & soil health insights
+- **Supports** multi-method authentication (Passkey, PIN, Zalo integration)
 
-- 🌾 Quản lý chất lượng đất chưa khoa học### **Soil Indicators (8):**
+### Use Cases
 
-- 💧 Tưới tiêu không tối ưu, lãng phí nước1. Soil Temperature (°C)
+✅ **Precision Farming** - Real-time soil monitoring & irrigation optimization
+✅ **Crop Planning** - AI-powered crop recommendations based on soil conditions
+✅ **Data Transparency** - Blockchain-verified audit trail for agricultural data
+✅ **Farmer Support** - Natural language AI chatbot for agricultural advice
+✅ **Compliance** - Immutable records for certification & traceability
 
-- 🌡️ Thiếu dữ liệu thời tiết thời gian thực2. Soil Moisture (%)
+---
 
-- 🔬 Không có khuyến nghị khoa học về bón phân3. Electrical Conductivity (µS/cm)
+## 🎯 Key Features
 
-- 🔒 Dữ liệu nông nghiệp thiếu tính minh bạch và bảo mật4. pH
-
-5. Nitrogen (mg/kg)
-
-### Giải pháp:6. Phosphorus (mg/kg)
-
-- ✅ Thu thập 11 thông số đất và khí tượng tự động7. Potassium (mg/kg)
-
-- ✅ Phân tích AI cho khuyến nghị cây trồng phù hợp8. Salinity (mg/L)
-
-- ✅ Lưu trữ dữ liệu bất biến trên blockchain
-
-- ✅ Dashboard trực quan với biểu đồ và cảnh báo### **Air/Weather Indicators (3):**
-
-- ✅ Xác thực passkey an toàn9. Air Temperature (°C)
-
-10. Air Humidity (%)
-
----11. Rain Status (boolean)
-
-## 🚀 Tính năng chính---
-
-### 🌐 IoT Data Collection## 🚀 Quick Start
-
-- **11 thông số cảm biến**:
-
-  - 🌡️ Nhiệt độ đất (Soil Temperature)### **1. Cài đặt dependencies:**
-
-  - 💧 Độ ẩm đất (Soil Moisture)
-
-  - ⚡ Độ dẫn điện (EC - Electrical Conductivity)```bash
-
-  - 🧪 Độ pH (pH Value)# Node.js
-
-  - 🟦 Nitơ (Nitrogen - N)npm install
-
-  - 🟨 Lân (Phosphorus - P)
-
-  - 🟥 Kali (Potassium - K)# Python (Flask)
-
-  - 🧂 Độ mặn (Salinity)pip install flask flask-cors psycopg2-binary python-dotenv
-
-  - 🌡️ Nhiệt độ không khí (Air Temperature)```
-
-  - 💨 Độ ẩm không khí (Air Humidity)
-
-  - 🌧️ Trạng thái mưa (Rain Status)### **2. Cấu hình `.env`:**
-
-- **Thu thập dữ liệu tự động** từ ESP8266/ESP32```env
-
-- **Lưu trữ PostgreSQL** với timestamp chính xácRPC_URL=https://rpc.zeroscan.org
-
-- **Callback tự động** đến blockchain bridgePRIVATE_KEY=0x...
-
-CONTRACT_ADDRESS=0x55313657185bd745917a7eD22fe9B827fC1AAC48
-
-### 🤖 AI-Powered AnalyticsPGHOST=36.50.134.107
-
-- **Crop Recommendation**: Khuyến nghị cây trồng phù hợp dựa trên điều kiện đấtPGPORT=6000
-
-- **Soil Health Analysis**: Phân tích sức khỏe đất theo thang điểmPGDATABASE=db_iot_sensor
-
-- **Anomaly Detection**: Phát hiện bất thường trong dữ liệuPGUSER=admin
-
-- **Daily Insights**: Tổng hợp phân tích hàng ngày tự độngPGPASSWORD=admin123
-
-- **Models**: Random Forest, XGBoost, Isolation ForestNODE_BRIDGE_URL=http://127.0.0.1:3000/bridgePending
-
-````
+### 🤖 AI-Powered Analysis
+- **Soil Health Scoring** (0-100 scale)
+- **Crop Recommendations** - Predicts best crops for current conditions
+- **Anomaly Detection** - Identifies unusual soil patterns
+- **LLM WITH FACT** - Gemini AI responds only based on real database data (no hallucination)
+- **Natural Language Chat** - Vietnamese language support with fallback rule-based AI
 
 ### ⛓️ Blockchain Integration
+- **Immutable Records** - All sensor data hashed and anchored on Zeroscan
+- **Daily Insights** - Aggregated AI analysis stored on-chain
+- **Duplicate Prevention** - Prevents duplicate blockchain transactions
+- **Public Verification** - Data verifiable via Zeroscan explorer
 
-- **Smart Contract**: SoilDataStore.sol trên Zero Network### **3. Chạy services:**
+### 🔐 Multi-Method Authentication
+- **Passkey (WebAuthn)** - Biometric/PIN authentication on device
+- **PIN-Based** - Traditional PIN authentication with bcrypt hashing
+- **Zalo Integration** - Link Zalo account for notifications
 
-- **Immutable Storage**: Lưu trữ dữ liệu cảm biến và AI insights
-
-- **Data Verification**: Sử dụng hash để xác minh tính toàn vẹn```bash
-
-- **Transparent**: Truy xuất nguồn gốc dữ liệu công khai# Terminal 1: Flask API
-
-python app_ingest.py
-
-### 🎨 Modern Web DApp
-
-- **Next.js 15** với TypeScript# Terminal 2: Node.js Bridge
-
-- **Passkey Authentication** (WebAuthn) - đăng nhập không cần mật khẩunode server.js
-
-- **WalletConnect** integration```
-
-- **Responsive UI** với Tailwind CSS
-
-- **Real-time Charts** với Chart.js---
-
-- **AI Chat Assistant** powered by Gemini
-
-## 📚 Tài liệu
+### 📊 Real-Time Dashboard
+- **Live Sensor Data** - 11 parameters updated in real-time
+- **24-Hour Trends** - Historical data visualization
+- **AI Insights History** - Daily analysis records with blockchain status
+- **Crop Management** - Track planted crops and harvest dates
+- **Responsive Design** - Works on desktop, tablet, and mobile
 
 ---
 
-- **[DEPLOYMENT_11_PARAMS.md](./DEPLOYMENT_11_PARAMS.md)** - Hướng dẫn deployment đầy đủ
-
-## 🏗️ Kiến trúc hệ thống- **[migrations/003_upgrade_to_11_parameters.sql](./migrations/003_upgrade_to_11_parameters.sql)** - Database migration script
-
-- **[test_11_params.json](./test_11_params.json)** - Test cases mẫu
-
-````
-
-┌─────────────────────────────────────────────────────────────────────────┐---
-
-│ GAIA.VN ARCHITECTURE │
-
-└─────────────────────────────────────────────────────────────────────────┘## 🧪 Testing
-
-┌──────────────────┐```bash
-
-│ IoT Devices │# Test Flask endpoint
-
-│ ESP8266/ESP32 │curl -X POST http://36.50.134.107:5000/api/data \
-
-│ + 7-in-1 Sensor │ -H "Content-Type: application/json" \
-
-└────────┬─────────┘ -d '{
-
-         │ HTTP POST (11 params)    "temperature": 24.5,
-
-         │    "humidity": 45.2,
-
-         ▼    "conductivity": 1250,
-
-┌─────────────────────────────────────────────────────────────────────────┐ "ph": 6.8,
-
-│ DATA INGESTION LAYER │ "nitrogen": 45,
-
-├─────────────────────────────────────────────────────────────────────────┤ "phosphorus": 30,
-
-│ Flask API (Port 5000) │ "potassium": 180,
-
-│ - app_ingest.py: Validate & store sensor data │ "salt": 850,
-
-│ - auth_routes.py: User authentication (bcrypt) │ "air_temperature": 27.1,
-
-│ - dashboard_routes.py: Data queries │ "air_humidity": 65.0,
-
-└────────┬────────────────────────────────────────────────────────────────┘ "is_raining": false,
-
-         │    "timestamp": "2025-10-27T10:30:00Z"
-
-         ▼  }'
-
-┌─────────────────────────────────────────────────────────────────────────┐
-
-│ DATABASE LAYER │# Kiểm tra data trên blockchain
-
-├─────────────────────────────────────────────────────────────────────────┤curl http://localhost:3000/getData
-
-│ PostgreSQL Database │```
-
-│ - sensor_data: Raw sensor readings │
-
-│ - daily_insights: AI aggregated analysis │---
-
-│ - recommendations: AI recommendations │
-
-│ - users: User management with passkey │## 📞 Support
-
-└────┬───────────────────────────────────────┬────────────────────────────┘
-
-     │                                       │GAIA.VN Team - Global Agro Intelligence Architecture
-
-     │ Callback                              │ Query
-
-     ▼                                       ▼
-
-┌─────────────────────────────┐ ┌──────────────────────────────────────┐
-│ BLOCKCHAIN BRIDGE │ │ AI SERVICE LAYER │
-│ Node.js + ethers.js │ │ FastAPI (Port 8000) │
-│ (Port 3000) │ │ - inference.py: Real-time ML │
-│ │ │ - daily_aggregator.py: Batch job │
-│ - Claim pending records │ │ - models_loader.py: ML models │
-│ - Push to smart contract │ │ │
-│ - Track onchain status │ │ Models: │
-└────────┬────────────────────┘ │ - Crop Recommendation (RF) │
-│ │ - Soil Health (XGB) │
-▼ │ - Anomaly Detection (IF) │
-┌─────────────────────────────┐ └──────────────────────────────────────┘
-│ BLOCKCHAIN LAYER │
-│ Zero Network │
-│ Chain ID: 5080 │ ┌──────────────────────────┐
-│ │ │ BACKEND API │
-│ SoilDataStore.sol │◄───────────│ Node.js Express │
-│ - storeSensorReading() │ │ (Port 4000) │
-│ - storeDailyInsight() │ │ - User management │
-│ - getRecordsByTimeRange() │ │ - Session handling │
-│ - getDailyInsightCount() │ └──────────▲───────────────┘
-└──────────────────────────────┘ │
-│
-┌──────────┴───────────────┐
-│ FRONTEND DAPP │
-│ Next.js 15 + TS │
-│ (Port 3001) │
-│ │
-│ - Dashboard │
-│ - Charts & Analytics │
-│ - AI Chat Assistant │
-│ - Passkey Auth │
-│ - WalletConnect │
-└──────────────────────────┘
+## 🏗️ System Architecture
 
 ```
-
-### Data Flow
-
+IoT Sensors (ESP8266/ESP32)
+    ↓ POST 11 parameters
+Flask API (unified_backend.py:8080)
+    ├─ Data Ingest
+    ├─ Authentication
+    ├─ AI Chat (LLM WITH FACT)
+    └─ Daily Analysis
+    ↓
+PostgreSQL (36.50.134.107:6000)
+    ├─ sensor_readings
+    ├─ daily_insights
+    ├─ users
+    └─ ai_recommendations
+    ↓
+Node.js Bridge (server.js:3000)
+    ↓ Blockchain callback
+Smart Contract (SoilDataStore.sol)
+    ↓ Zeroscan blockchain
+Frontend (Next.js:3001)
+    ├─ Dashboard
+    ├─ AI Chat Modal
+    └─ Blockchain Verification
 ```
 
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│ IoT │───▶│ Flask │───▶│PostgreSQL│───▶│ Bridge │───▶│Blockchain│
-│ Device │ │ API │ │ DB │ │ Node.js │ │ Zero │
-└──────────┘ └──────────┘ └────┬─────┘ └──────────┘ └──────────┘
-│
-│
-▼
-┌──────────┐
-│ AI │
-│ Service │
-└────┬─────┘
-│
-▼
-┌──────────┐
-│ Daily │
-│ Insights │
-└────┬─────┘
-│
-▼
-┌──────────┐
-│Blockchain│
-│ Storage │
-└──────────┘
+---
 
-````
+## 📊 11 Sensor Parameters
+
+**Soil (8):** Temperature, Moisture, Conductivity, pH, N, P, K, Salinity
+**Air (3):** Temperature, Humidity, Rain Status
 
 ---
 
-## 🛠️ Công nghệ sử dụng
+## 💻 Technology Stack
 
-### Backend
-- **Python 3.8+**
-  - Flask 2.3.3 - Data ingestion API
-  - FastAPI 0.104.1 - AI service
-  - scikit-learn 1.3.2 - Machine Learning
-  - psycopg2 - PostgreSQL driver
-
-- **Node.js 18+**
-  - Express 5.1.0 - Backend API
-  - ethers.js 6.13.0 - Blockchain interaction
-  - pg 8.12.0 - PostgreSQL driver
-
-### Frontend
-- **Next.js 15.1.2** - React framework
-- **TypeScript 5** - Type safety
-- **Tailwind CSS 3.4** - Styling
-- **Chart.js 4.5** - Data visualization
-- **@simplewebauthn/browser** - Passkey authentication
-- **Gemini AI** - Chatbot assistant
-
-### Blockchain
-- **Solidity 0.8.20** - Smart contract language
-- **Hardhat 2.26.3** - Development environment
-- **Zero Network** - Blockchain platform (Chain ID: 5080)
-
-### Database
-- **PostgreSQL 13+** - Primary database
-
-### IoT
-- **ESP8266/ESP32** - Microcontroller
-- **7-in-1 Soil Sensor** - Data collection
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Python (Flask, FastAPI), Node.js (Express) |
+| **Frontend** | Next.js 15.1.2, React 19, TypeScript, Tailwind CSS |
+| **Database** | PostgreSQL 12+ |
+| **AI/ML** | TensorFlow, Scikit-learn, Google Gemini |
+| **Blockchain** | Solidity 0.8.20, Ethers.js, Zeroscan |
+| **Auth** | WebAuthn (Passkey), bcrypt, JWT |
 
 ---
 
-## 💻 Yêu cầu hệ thống
+## 🚀 Installation
 
-### Phần cứng
-- **ESP8266/ESP32** với 7-in-1 soil sensor
-- **Server** (VPS/Cloud):
-  - RAM: 4GB+
-  - CPU: 2 cores+
-  - Storage: 20GB+
-  - OS: Ubuntu 20.04+ / Windows 10+
+### Prerequisites
+- Node.js 18+, npm
+- Python 3.10+
+- PostgreSQL 12+
+- Git
 
-### Phần mềm
-- **Node.js** >= 18.0.0
-- **Python** >= 3.8
-- **PostgreSQL** >= 13
-- **Git**
-- **npm** hoặc **yarn**
-- **pip** (Python package manager)
-
----
-
-## 📥 Hướng dẫn cài đặt
-
-### 1. Clone repository
+### Clone & Install
 
 ```bash
-git clone https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam.git
+git clone https://github.com/WAGTeam/Pione_AIBlockchainIoT-WAGTeam.git
 cd Pione_AIBlockchainIoT-WAGTeam
-````
 
-### 2. Cài đặt Database
-
-```bash
-# Khởi tạo PostgreSQL database
-psql -U postgres
-
-# Tạo database
-CREATE DATABASE db_iot_sensor;
-
-# Import schema
-psql -U postgres -d db_iot_sensor < db.sql
-
-# Chạy migrations
-psql -U postgres -d db_iot_sensor < migrations/008_add_users_table.sql
-psql -U postgres -d db_iot_sensor < migrations/009_add_pin_hash_column.sql
-psql -U postgres -d db_iot_sensor < migrations/010_fix_nullable_passkey.sql
-```
-
-### 3. Cài đặt Backend Services
-
-#### a. Flask Data Ingestion API
-
-```bash
-# Cài đặt Python dependencies
+# Install all dependencies
+npm install
 pip install -r requirements.txt
-
-# Tạo .env file
-cp .env.example .env
-
-# Chỉnh sửa .env với thông tin database của bạn
-# PGHOST=localhost
-# PGPORT=5432
-# PGDATABASE=db_iot_sensor
-# PGUSER=postgres
-# PGPASSWORD=your_password
-```
-
-#### b. AI Service (FastAPI)
-
-```bash
-cd ai/ai_service
-
-# Cài đặt dependencies
-pip install -r requirements.txt
-
-# Tạo config.env
-cp config.env.example config.env
-
-# Chỉnh sửa config với thông tin database
-```
-
-#### c. Blockchain Bridge (Node.js)
-
-```bash
-# Cài đặt dependencies
-npm install
-
-# Tạo .env với private key và contract address
-# RPC_URL=https://rpc.zeroscan.org
-# PRIVATE_KEY=0x...
-# CONTRACT_ADDRESS=0x...
-```
-
-#### d. Backend API (Express)
-
-```bash
-cd Dapp/backend
-
-# Cài đặt dependencies
-npm install
-
-# Tạo .env
-cp .env.example .env
-
-# Chỉnh sửa database connection
-```
-
-### 4. Cài đặt Frontend DApp
-
-```bash
-cd Dapp/frontend
-
-# Cài đặt dependencies
-npm install
-
-# Tạo .env.local
-cp env.local.example .env.local
-
-# Chỉnh sửa environment variables
-# NEXT_PUBLIC_API_URL=http://localhost:4000
-# NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key
-# NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
-```
-
-### 5. Deploy Smart Contract (Nếu cần)
-
-```bash
-cd blockchain
-
-# Cài đặt Hardhat dependencies
-npm install
-
-# Compile contract
-npx hardhat compile
-
-# Deploy to Zero Network
-npx hardhat run scripts/deploy.js --network zero
+cd ai_service && pip install -r requirements.txt && cd ..
+cd Dapp/frontend && npm install && cd ../..
 ```
 
 ---
 
-## ⚙️ Cấu hình
+## ⚙️ Configuration
 
-### Environment Variables
-
-#### Root `.env`
+### 1. Environment Variables (.env)
 
 ```env
 # Database
-PGHOST=localhost
+PGHOST=your_database_host
 PGPORT=5432
-PGDATABASE=db_iot_sensor
-PGUSER=postgres
-PGPASSWORD=your_password
+PGDATABASE=your_database_name
+PGUSER=your_db_user
+PGPASSWORD=your_secure_password
 
-# Blockchain Bridge
+# Blockchain
+RPC_URL=https://rpc.zeroscan.org
+PRIVATE_KEY=0xyour_private_key_here
+CONTRACT_ADDRESS=0xyour_contract_address
+
+# AI Services
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_NAME=gemini-2.5-pro
+
+# Services
 NODE_BRIDGE_URL=http://127.0.0.1:3000/bridgePending
 ```
 
-#### `blockchain/.env` (hoặc root cho bridge)
+### 2. Database Setup
 
-```env
-RPC_URL=https://rpc.zeroscan.org
-PRIVATE_KEY=0x1234567890abcdef...
-CONTRACT_ADDRESS=0x55313657185bd745917a7eD22fe9B827fC1AAC48
-```
-
-#### `ai/ai_service/config.env`
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=db_iot_sensor
-DB_USER=postgres
-DB_PASSWORD=your_password
-```
-
-#### `Dapp/backend/.env`
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=db_iot_sensor
-DB_USER=postgres
-DB_PASSWORD=your_password
-PORT=4000
-```
-
-#### `Dapp/frontend/.env.local`
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:4000
-NEXT_PUBLIC_GEMINI_API_KEY=AIzaSy...
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=513950...
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x55313657185bd745917a7eD22fe9B827fC1AAC48
-NEXT_PUBLIC_RPC_URL=https://rpc.zeroscan.org
-NEXT_PUBLIC_CHAIN_ID=5080
+```bash
+psql -h $PGHOST -U $PGUSER -d postgres -c "CREATE DATABASE $PGDATABASE;"
+psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f db.sql
+psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f migrations/*.sql
 ```
 
 ---
 
-## 🎮 Hướng dẫn sử dụng
+## 🏃 Running Services
 
-### Khởi động hệ thống
-
-#### 1. Khởi động Flask API (Data Ingestion)
+### Unified Start (Recommended)
 
 ```bash
-python app_ingest.py
-# Running on http://localhost:5000
+chmod +x START_UNIFIED.sh
+./START_UNIFIED.sh
 ```
 
-#### 2. Khởi động Blockchain Bridge
+Starts all services:
+- Backend API (Port 8080)
+- Blockchain Bridge (Port 3000)
+- AI Service (Port 8000)
+- Frontend (Port 3001)
+
+### Manual Start
 
 ```bash
+# Terminal 1: Backend
+python unified_backend.py
+
+# Terminal 2: Blockchain Bridge
 node server.js
-# Server running on port 3000
+
+# Terminal 3: AI Service
+cd ai_service && python main.py
+
+# Terminal 4: Frontend
+cd Dapp/frontend && npm run dev
 ```
 
-#### 3. Khởi động AI Service
+### Verify Services
 
 ```bash
-cd ai/ai_service
-uvicorn main:app --reload --port 8000
-# Running on http://localhost:8000
+curl http://localhost:8080/api/latest
+curl http://localhost:8000/api/ai/health
+curl http://localhost:3000/status
+open http://localhost:3001
 ```
-
-#### 4. Khởi động Backend API
-
-```bash
-cd Dapp/backend
-npm start
-# Server running on port 4000
-```
-
-#### 5. Khởi động Frontend DApp
-
-```bash
-cd Dapp/frontend
-npm run dev
-# Running on http://localhost:3001
-```
-
-### Gửi dữ liệu từ ESP8266/ESP32
-
-```cpp
-// Arduino code snippet
-#include <ESP8266HTTPClient.h>
-
-String serverUrl = "http://your-server-ip:5000/api/data";
-
-void sendSensorData() {
-  HTTPClient http;
-  http.begin(serverUrl);
-  http.addHeader("Content-Type", "application/json");
-
-  String payload = "{\"temperature\":" + String(soilTemp) +
-                   ",\"humidity\":" + String(soilMoisture) +
-                   ",\"conductivity\":" + String(ec) +
-                   ",\"ph\":" + String(ph) +
-                   ",\"nitrogen\":" + String(n) +
-                   ",\"phosphorus\":" + String(p) +
-                   ",\"potassium\":" + String(k) +
-                   ",\"salt\":" + String(salinity) +
-                   ",\"air_temperature\":" + String(airTemp) +
-                   ",\"air_humidity\":" + String(airHumidity) +
-                   ",\"is_raining\":" + String(isRaining) +
-                   ",\"timestamp\":\"" + getTimestamp() + "\"}";
-
-  int httpCode = http.POST(payload);
-  http.end();
-}
-```
-
-### Truy cập Dashboard
-
-1. Mở browser: `http://localhost:3001`
-2. Đăng ký tài khoản với **Passkey** (không cần mật khẩu)
-3. Xem dashboard với biểu đồ và phân tích
-4. Chat với AI assistant về dữ liệu nông nghiệp
 
 ---
 
 ## 📡 API Documentation
 
-### Flask Data Ingestion API (Port 5000)
+### Data Ingest
+**POST** `/api/data` - Receive sensor data
 
-#### POST `/api/data` - Gửi dữ liệu cảm biến
-
-```json
-{
-  "temperature": 24.5,
-  "humidity": 45.2,
-  "conductivity": 1250,
-  "ph": 6.8,
-  "nitrogen": 45,
-  "phosphorus": 30,
-  "potassium": 180,
-  "salt": 850,
-  "air_temperature": 27.1,
-  "air_humidity": 65.0,
-  "is_raining": false,
-  "timestamp": "2025-11-10T10:30:00Z"
-}
+```bash
+curl -X POST http://localhost:8080/api/data \
+  -H "Content-Type: application/json" \
+  -d '{
+    "soil_temperature_c": 24.5,
+    "soil_moisture_pct": 45.2,
+    "conductivity_us_cm": 1250,
+    "ph_value": 6.8,
+    "nitrogen_mg_kg": 45,
+    "phosphorus_mg_kg": 30,
+    "potassium_mg_kg": 180,
+    "salt_mg_l": 850,
+    "air_temperature_c": 27.1,
+    "air_humidity_pct": 65.0,
+    "is_raining": false
+  }'
 ```
 
-**Response:**
+### AI Chat
+**POST** `/api/ai/chat` - AI chatbot (LLM WITH FACT mode)
 
-```json
-{
-  "success": true,
-  "id": 123,
-  "message": "Data stored successfully"
-}
+```bash
+curl -X POST http://localhost:8080/api/ai/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Nhiệt độ + NPK ổn không?"}'
 ```
 
-#### GET `/api/dashboard/latest` - Lấy dữ liệu mới nhất
+### Daily Analysis
+**POST** `/api/ai/analyze-daily-insights` - Daily analysis + DB save + blockchain push
 
-**Response:**
-
-```json
-{
-  "id": 123,
-  "temperature": 24.5,
-  "humidity": 45.2,
-  "measured_at": "2025-11-10T10:30:00Z",
-  ...
-}
+```bash
+curl -X POST http://localhost:8080/api/ai/analyze-daily-insights \
+  -H "Content-Type: application/json" \
+  -d '{"date": "2025-11-10"}'
 ```
 
-### AI Service API (Port 8000)
+### Dashboard
+**GET** `/api/dashboard/overview` - Statistics overview
 
-#### POST `/predict/crop` - Dự đoán cây trồng phù hợp
-
-```json
-{
-  "N": 45,
-  "P": 30,
-  "K": 180,
-  "temperature": 27.1,
-  "humidity": 65.0,
-  "ph": 6.8,
-  "rainfall": 0
-}
-```
-
-**Response:**
-
-```json
-{
-  "crop": "coffee",
-  "confidence": 0.985,
-  "alternatives": ["rice", "banana"]
-}
-```
-
-#### POST `/predict/soil-health` - Phân tích sức khỏe đất
-
-**Response:**
-
-```json
-{
-  "score": 88.3,
-  "rating": "GOOD",
-  "factors": {
-    "ph_status": "optimal",
-    "nutrients_balance": "good",
-    "moisture_level": "adequate"
-  }
-}
-```
-
-### Blockchain Bridge API (Port 3000)
-
-#### GET `/getData` - Lấy dữ liệu từ blockchain
-
-**Response:**
-
-```json
-{
-  "count": 1234,
-  "latest": {
-    "id": 123,
-    "soilTemperature": 245,
-    "soilMoisture": 452,
-    "dataHash": "0x...",
-    "reporter": "0x..."
-  }
-}
-```
-
-#### POST `/bridgePending` - Push dữ liệu pending lên blockchain
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "pushed": 5,
-  "txHash": "0x..."
-}
-```
-
-### Backend API (Port 4000)
-
-#### POST `/api/auth/register` - Đăng ký người dùng
-
-```json
-{
-  "username": "farmer01",
-  "email": "farmer@example.com",
-  "passkey_credential": {...}
-}
-```
-
-#### GET `/api/users/:id` - Lấy thông tin user
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "username": "farmer01",
-  "email": "farmer@example.com",
-  "created_at": "2025-11-10T10:00:00Z"
-}
-```
-
----
-
-## 🔗 Smart Contract
-
-### SoilDataStore.sol
-
-Deployed on **Zero Network** (Chain ID: 5080)
-
-**Contract Address:** `0x55313657185bd745917a7eD22fe9B827fC1AAC48`
-
-**Explorer:** https://zeroscan.org/address/0x55313657185bd745917a7eD22fe9B827fC1AAC48
-
-### Main Functions
-
-#### Store Sensor Reading
-
-```solidity
-function storeSensorReading(
-    uint256 _id,
-    uint256 _measuredAtVN,
-    uint256 _soilTemperature,  // × 10
-    uint256 _soilMoisture,     // × 10
-    uint256 _conductivity,
-    uint256 _phValue,          // × 10
-    uint256 _nitrogen,
-    uint256 _phosphorus,
-    uint256 _potassium,
-    uint256 _salt,
-    uint256 _airTemperature,   // × 10
-    uint256 _airHumidity,      // × 10
-    bool _isRaining,
-    bytes32 _dataHash
-) public
-```
-
-#### Store Daily AI Insight
-
-```solidity
-function storeDailyInsight(
-    uint256 _id,
-    uint256 _dateTimestamp,
-    uint256 _sampleCount,
-    string memory _recommendedCrop,
-    uint256 _confidence,       // × 100
-    uint256 _soilHealthScore,  // × 10
-    uint8 _healthRating,       // 0-3
-    bool _isAnomalyDetected,
-    string memory _recommendations,
-    bytes32 _recordHash
-) public
-```
-
-#### Query Functions
-
-```solidity
-function getCount() public view returns (uint256)
-function getRecord(uint256 id) public view returns (SoilData memory)
-function getRecordsByTimeRange(uint256 start, uint256 end) public view returns (SoilData[] memory)
-function getDailyInsightCount() public view returns (uint256)
-function getLatestDailyInsight() public view returns (DailyInsight memory)
-```
-
----
-
-## 📂 Cấu trúc thư mục
-
-```
-Pione_AIBlockchainIoT-WAGTeam/
-│
-├── ai/                          # AI Module
-│   ├── ai_module/              # Training pipeline
-│   │   ├── prepare_ml_data.py  # Data preparation
-│   │   ├── retrain_models.py   # Model training
-│   │   ├── soil_training.ipynb # Jupyter notebook
-│   │   ├── data/               # Training datasets
-│   │   └── models/             # Saved ML models
-│   │
-│   ├── ai_service/             # AI Inference Service (FastAPI)
-│   │   ├── main.py             # FastAPI app
-│   │   ├── inference.py        # Prediction endpoints
-│   │   ├── models_loader.py    # Load ML models
-│   │   ├── daily_aggregator.py # Daily batch processing
-│   │   ├── schemas.py          # Pydantic models
-│   │   ├── config.env.example
-│   │   └── requirements.txt
-│   │
-│   └── dataset/                # Raw datasets
-│       ├── Crop_recommendation.csv
-│       └── augmented_soil_data_11_params.csv
-│
-├── blockchain/                  # Blockchain Module
-│   ├── contracts/
-│   │   └── SoilDataStore.sol   # Smart contract
-│   ├── scripts/
-│   │   └── deploy.js           # Deployment script
-│   ├── hardhat.config.cjs      # Hardhat configuration
-│   └── artifacts/              # Compiled contracts
-│
-├── Dapp/                        # Decentralized Application
-│   ├── frontend/               # Next.js Frontend
-│   │   ├── src/
-│   │   │   ├── app/            # App router
-│   │   │   ├── components/     # React components
-│   │   │   ├── context/        # Context providers
-│   │   │   ├── lib/            # Utilities
-│   │   │   └── services/       # API services
-│   │   ├── package.json
-│   │   ├── next.config.ts
-│   │   ├── tailwind.config.ts
-│   │   └── env.local.example
-│   │
-│   └── backend/                # Node.js Backend API
-│       ├── routes/
-│       │   └── auth.js         # Authentication routes
-│       ├── server.js           # Express server
-│       ├── db.js               # Database connection
-│       ├── package.json
-│       └── .env.example
-│
-├── migrations/                  # Database migrations
-│   ├── 008_add_users_table.sql
-│   ├── 009_add_pin_hash_column.sql
-│   └── 010_fix_nullable_passkey.sql
-│
-├── app_ingest.py               # Flask data ingestion API
-├── auth_routes.py              # Authentication routes
-├── dashboard_routes.py         # Dashboard data routes
-├── server.js                   # Blockchain bridge (Node.js)
-├── esp8266_LTMMT.ino          # Arduino IoT code
-├── db.sql                      # Database schema
-├── requirements.txt            # Python dependencies (root)
-├── package.json                # Node.js dependencies (root)
-├── .gitignore
-├── .env.example
-└── README.md
+```bash
+curl http://localhost:8080/api/dashboard/overview
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Test Data Ingestion
-
 ```bash
-curl -X POST http://localhost:5000/api/data \
+# Test data ingest
+curl -X POST http://localhost:8080/api/data \
   -H "Content-Type: application/json" \
-  -d @test_data.json
-```
+  -d '{"soil_temperature_c": 24.5, ...}'
 
-### Test AI Prediction
-
-```bash
-curl -X POST http://localhost:8000/predict/crop \
+# Test AI chat
+curl -X POST http://localhost:8080/api/ai/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "N": 45, "P": 30, "K": 180,
-    "temperature": 27.1, "humidity": 65.0,
-    "ph": 6.8, "rainfall": 0
-  }'
-```
+  -d '{"message": "Bón phân gì?"}'
 
-### Test Blockchain Query
-
-```bash
-curl http://localhost:3000/getData
-```
-
-### Run Unit Tests
-
-```bash
-# Python tests
-pytest tests/
-
-# JavaScript tests
-npm test
+# Check blockchain
+curl http://localhost:3000/api/getPending
 ```
 
 ---
 
-## 🔐 Bảo mật
+## 📦 Deployment
 
-### Passkey Authentication
+### Docker
 
-- Sử dụng **WebAuthn** standard
-- Không cần mật khẩu
-- Xác thực sinh trắc học (vân tay, Face ID)
-- Chống phishing và replay attacks
+```bash
+docker-compose build
+docker-compose up -d
+docker-compose logs -f
+```
 
-### Blockchain Security
+### Production Checklist
 
-- Dữ liệu **immutable** trên blockchain
-- Hash verification để đảm bảo tính toàn vẹn
-- Public ledger cho tính minh bạch
-
-### Best Practices
-
-- ⚠️ **KHÔNG COMMIT** file `.env` lên Git
-- 🔑 Sử dụng `.env.example` làm template
-- 🔄 Thay đổi private key sau khi test
-- 🔒 Regenerate tất cả API keys trước production
+- [ ] Strong database passwords
+- [ ] HTTPS/SSL certificates
+- [ ] Secure environment variables
+- [ ] Database backups enabled
+- [ ] Firewall rules configured
+- [ ] Monitoring & alerting setup
+- [ ] Rate limiting enabled
+- [ ] CORS properly configured
+- [ ] Log aggregation setup
+- [ ] Disaster recovery tested
 
 ---
 
-## 🚨 Troubleshooting
-
-### Database Connection Error
-
-```bash
-# Kiểm tra PostgreSQL service
-sudo systemctl status postgresql
-
-# Restart PostgreSQL
-sudo systemctl restart postgresql
-```
-
-### Port Already in Use
-
-```bash
-# Find process using port
-lsof -i :5000  # hoặc port khác
-
-# Kill process
-kill -9 <PID>
-```
-
-### Smart Contract Deployment Failed
-
-```bash
-# Kiểm tra balance ví
-# Đảm bảo có đủ gas fee trên Zero Network
-
-# Verify RPC endpoint
-curl https://rpc.zeroscan.org
-```
-
----
-
-## 🤝 Đóng góp
-
-Chúng tôi hoan nghênh mọi đóng góp! Để contribute:
+## 🤝 Contributing
 
 1. Fork repository
-2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
-
-### Coding Standards
-
-- Python: Follow PEP 8
-- JavaScript/TypeScript: Follow ESLint config
-- Commit messages: Conventional Commits format
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
 ---
 
-## 📜 License
+## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-## 📞 Liên hệ
-
-**GAIA.VN Team** - Global Agro Intelligence Architecture – Vietnam
-
-- 📧 Email: contact@gaia.vn
-- 🌐 Website: https://163-61-183-90.nip.io/ (dev / demo)
-- 🌐 Project domain: https://gaia.vn
-- 📱 GitHub: [@minhe51805](https://github.com/minhe51805)
-
-**Project Link:** [https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam](https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam)
+MIT License - see LICENSE file for details
 
 ---
 
-## 🙏 Acknowledgments
-
-- [Zero Network](https://zeroscan.org) - Blockchain platform
-- [Hardhat](https://hardhat.org) - Ethereum development environment
-- [Next.js](https://nextjs.org) - React framework
-- [FastAPI](https://fastapi.tiangolo.com) - Python web framework
-- [scikit-learn](https://scikit-learn.org) - Machine learning library
-- [Gemini AI](https://ai.google.dev) - AI chat assistant
-
----
-
-<div align="center">
-
-**Made with ❤️ by GAIA.VN Team**
-
-⭐ Star us on GitHub nếu project này hữu ích!
-
-</div>
+**Version:** 2.0.0 | **Last Updated:** November 2025
