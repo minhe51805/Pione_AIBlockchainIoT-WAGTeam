@@ -1,32 +1,23 @@
-# 🌱 AgroTwin - AI-Powered Blockchain IoT for Smart Agriculture<<<<<<< HEAD
+<div align="center">
 
-# Pione_AIBlockchainIoT-WAGTeam
+# 🌱 **GAIA.VN**
 
-<div align="center">Pione_AIBlockchainIoT-WAGTeam links an ESP32 and 7-in-1 soil sensor to a backend that cleans and standardizes data, then splits: (1) curated datasets train ML models for irrigation, nutrition, and health forecasts; (2) the same records are hashed and anchored on Pione’s blockchain. APIs and a dashboard deliver live metrics and provenance checks v2.
+### **Global Agro Intelligence Architecture – Vietnam**
 
-=======
+#### AI • Blockchain • IoT • Smart Agriculture Platform
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)# 🌱 Pione AI-Blockchain-IoT (WAG Team)
+![Version](https://img.shields.io/badge/Version-1.0.0-2ecc71.svg)
+![License](https://img.shields.io/badge/License-MIT-27ae60.svg)
+![Node](https://img.shields.io/badge/Node-%3E%3D18-3498db.svg)
+![Python](https://img.shields.io/badge/Python-%3E%3D3.8-9b59b6.svg)
 
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+GAIA.VN là nền tảng nông nghiệp thông minh tích hợp IoT, AI và Blockchain,  
+xây dựng hệ sinh thái dữ liệu nông nghiệp **minh bạch – chính xác – thời gian thực** cho Việt Nam.
 
-![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)## 📊 Hệ thống IoT → Database → Blockchain cho Nông nghiệp Thông minh
-
-![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue.svg)
-
-### **Tính năng chính:**
-
-**Hệ thống giám sát nông nghiệp thông minh kết hợp IoT, AI và Blockchain**- ✅ Thu thập **11 thông số** từ cảm biến đất & khí tượng
-
-- ✅ Lưu trữ bất biến trên blockchain **Zeroscan**
-
-[Tính năng](#-tính-năng-chính) • [Kiến trúc](#-kiến-trúc-hệ-thống) • [Cài đặt](#-hướng-dẫn-cài-đặt) • [Sử dụng](#-hướng-dẫn-sử-dụng) • [API](#-api-documentation)- ✅ Pipeline tự động: IoT → DB → Blockchain
-
-- ✅ Sẵn sàng cho AI analysis & recommendations
+Hệ thống kết nối **ESP32 + cảm biến môi trường 7-trong-1**, pipeline AI và Smart Contract trên **Zero Network**,  
+tạo nên một kiến trúc dữ liệu nông nghiệp thống nhất, phục vụ dự báo – phân tích – truy xuất nguồn gốc.
 
 </div>
-
----
 
 ---
 
@@ -74,7 +65,7 @@
 
 ---
 
-**AgroTwin** là một hệ thống giám sát nông nghiệp thông minh toàn diện, kết hợp công nghệ IoT, AI và Blockchain để cung cấp giải pháp quản lý đất đai và cây trồng hiệu quả cho nông dân.
+**GAIA.VN** là một hệ thống giám sát nông nghiệp thông minh toàn diện, kết hợp công nghệ IoT, AI và Blockchain để cung cấp giải pháp quản lý đất đai và cây trồng hiệu quả cho nông dân.
 
 ## 📦 11 Thông số thu thập
 
@@ -198,7 +189,7 @@ python app_ingest.py
 
 ┌─────────────────────────────────────────────────────────────────────────┐---
 
-│ AGROTWIN ARCHITECTURE │
+│ GAIA.VN ARCHITECTURE │
 
 └─────────────────────────────────────────────────────────────────────────┘## 🧪 Testing
 
@@ -256,9 +247,9 @@ python app_ingest.py
 
 └────┬───────────────────────────────────────┬────────────────────────────┘
 
-     │                                       │WAG Team - Pione AI-Blockchain-IoT Project
+     │                                       │GAIA.VN Team - Global Agro Intelligence Architecture
 
-     │ Callback                              │ Query>>>>>>> origin/newapp
+     │ Callback                              │ Query
 
      ▼                                       ▼
 
@@ -1057,10 +1048,10 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📞 Liên hệ
 
-**WAG Team** - Pione AI-Blockchain-IoT Project
+**GAIA.VN Team** - Global Agro Intelligence Architecture – Vietnam
 
-- 📧 Email: contact@wagteam.com
-- 🌐 Website: https://agrotwin.wagteam.com
+- 📧 Email: contact@gaia.vn
+- 🌐 Website: https://gaia.vn
 - 📱 GitHub: [@minhe51805](https://github.com/minhe51805)
 
 **Project Link:** [https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam](https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam)
@@ -1080,7 +1071,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
 
-**Made with ❤️ by WAG Team**
+**Made with ❤️ by GAIA.VN Team**
 
 ⭐ Star us on GitHub nếu project này hữu ích!
 
