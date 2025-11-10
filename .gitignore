@@ -5,3 +5,53 @@ dist/
 out/
 build/
 *.pack.gz
+
+# Environment Variables (NEVER commit these!)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.env
+!*.env.example
+config.env
+!config.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hardhat / Blockchain
+cache/
+artifacts/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# Logs
+*.log
+logs/
