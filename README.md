@@ -1051,7 +1051,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **GAIA.VN Team** - Global Agro Intelligence Architecture – Vietnam
 
 - 📧 Email: contact@gaia.vn
-- 🌐 Website: https://gaia.vn
+- 🌐 Website: https://163-61-183-90.nip.io/ (dev / demo)
+- 🌐 Project domain: https://gaia.vn
 - 📱 GitHub: [@minhe51805](https://github.com/minhe51805)
 
 **Project Link:** [https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam](https://github.com/minhe51805/Pione_AIBlockchainIoT-WAGTeam)

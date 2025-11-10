@@ -1,6 +1,7 @@
 {
   "name": "soil-chain",
   "version": "1.0.0",
+  "homepage": "https://163-61-183-90.nip.io/",
   "main": "index.js",
   "type": "module",
   "scripts": {
